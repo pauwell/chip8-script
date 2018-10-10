@@ -1,4 +1,10 @@
+dist: trusty
 language: cpp
+sudo: false
 compiler:
   - clang
   - gcc
+
+script:
+  - cmake .
+  - cmake --build .

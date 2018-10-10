@@ -1,6 +1,6 @@
 Debug/
 *.vcxproj*
-*.txt
+concept.txt
 
 # Prerequisites
 *.d
