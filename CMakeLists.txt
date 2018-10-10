@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9.4)
+cmake_minimum_required(VERSION 3.9.2)
 
 project(cpp-snippets)
 add_executable(cpp-snippets "main.cpp")
