@@ -6,7 +6,7 @@
 #include <vector>
 #include <functional>
 #include <exception>
-#include <algorithm> // std::transform
+//#include <algorithm> // std::transform
 
 namespace ch8scr
 {
@@ -42,7 +42,7 @@ namespace ch8scr
 		}
 
 		// Convert `input_code` into lowercase.
-		std::transform(input_code.begin(), input_code.end(), input_code.begin(), std::tolower);
+		//std::transform(input_code.begin(), input_code.end(), input_code.begin(), std::tolower);
 
 		std::vector<Token> tokens;
 		auto cursor = input_code.begin();
