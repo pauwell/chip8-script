@@ -6,7 +6,7 @@
 #include <vector>
 #include <functional>
 #include <exception>
-#include <algorithm> // std::transform
+//#include <algorithm> // std::transform
 
 namespace ch8scr
 {
@@ -42,7 +42,7 @@ namespace ch8scr
 		}
 
 		// Convert `input_code` into lowercase.
-		std::transform(input_code.begin(), input_code.end(), input_code.begin(), std::tolower);
+		//std::transform(input_code.begin(), input_code.end(), input_code.begin(), std::tolower);
 
 		std::vector<Token> tokens;
 		auto cursor = input_code.begin();
@@ -66,19 +66,19 @@ namespace ch8scr
 			// Operators.
 			else if (current_char == '=' || current_char == '+')
 			{
-				std::string tok = read_token_string(input_code, cursor, std::ispunct);
+				std::string tok = read_token_string(input_code, cursor, static_cast<int(*)(int)>(std::ispunct));
 				tokens.push_back(Token{ TokenType::Operator, tok });
 			}
 			// Numerical.
 			else if (std::isdigit(current_char))
 			{
-				std::string tok = read_token_string(input_code, cursor, std::isdigit);
+				std::string tok = read_token_string(input_code, cursor, static_cast<int(*)(int)>(std::isdigit));
 				tokens.push_back(Token{ TokenType::Numerical, tok });
 			}
 			// Letters.
 			else if (std::isalpha(current_char))
 			{
-				std::string tok = read_token_string(input_code, cursor, std::isalpha);
+				std::string tok = read_token_string(input_code, cursor, static_cast<int(*)(int)>(std::isalpha));
 				if (tok == "var") tokens.push_back(Token{ TokenType::Var, tok });
 				else tokens.push_back(Token{ TokenType::Identifier, tok });
 			}
