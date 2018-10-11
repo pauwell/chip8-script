@@ -8,6 +8,8 @@
 #include <exception>
 #include <algorithm> // std::transform
 
+#define INT_FUNC(f) static_cast<int(*)(int)>(f) 
+
 namespace ch8scr
 {
 	enum class TokenType { Var, Identifier, Operator, Numerical, ClosingStatement, EndOfProgram };
@@ -42,7 +44,7 @@ namespace ch8scr
 		}
 
 		// Convert `input_code` into lowercase.
-		std::transform(input_code.begin(), input_code.end(), input_code.begin(), static_cast<int(*)(int)>(std::tolower));
+		std::transform(input_code.begin(), input_code.end(), input_code.begin(), INT_FUNC(std::tolower));
 
 		std::vector<Token> tokens;
 		auto cursor = input_code.begin();
@@ -66,19 +68,19 @@ namespace ch8scr
 			// Operators.
 			else if (current_char == '=' || current_char == '+')
 			{
-				std::string tok = read_token_string(input_code, cursor, static_cast<int(*)(int)>(std::ispunct));
+				std::string tok = read_token_string(input_code, cursor, INT_FUNC(std::ispunct));
 				tokens.push_back(Token{ TokenType::Operator, tok });
 			}
 			// Numerical.
 			else if (std::isdigit(current_char))
 			{
-				std::string tok = read_token_string(input_code, cursor, static_cast<int(*)(int)>(std::isdigit));
+				std::string tok = read_token_string(input_code, cursor, INT_FUNC(std::isdigit));
 				tokens.push_back(Token{ TokenType::Numerical, tok });
 			}
 			// Letters.
 			else if (std::isalpha(current_char))
 			{
-				std::string tok = read_token_string(input_code, cursor, static_cast<int(*)(int)>(std::isalpha));
+				std::string tok = read_token_string(input_code, cursor, INT_FUNC(std::isalpha));
 				if (tok == "var") tokens.push_back(Token{ TokenType::Var, tok });
 				else tokens.push_back(Token{ TokenType::Identifier, tok });
 			}
@@ -92,6 +94,8 @@ namespace ch8scr
 
 		return tokens;
 	}
+
+#undef INT_FUNC(f)
 
 	// -------------------------------------------------------------------------
 
