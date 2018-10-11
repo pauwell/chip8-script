@@ -52,7 +52,6 @@ namespace ch8scr
 		while (cursor != input_code.end())
 		{
 			char current_char = *cursor;
-			std::cout << current_char << '\n';
 
 			// Newline and semicolon (End of statement).
 			if (current_char == '\n' || current_char == ';')
@@ -85,9 +84,7 @@ namespace ch8scr
 				else tokens.push_back(Token{ TokenType::Identifier, tok });
 			}
 			else
-			{
 				throw std::runtime_error("Unexpected character in input code: " + current_char + '\n');
-			}
 		}
 
 		tokens.push_back(Token{ TokenType::EndOfProgram, "end" });
@@ -95,7 +92,7 @@ namespace ch8scr
 		return tokens;
 	}
 
-#undef INT_FUNC(f)
+#undef INT_FUNC
 
 	// -------------------------------------------------------------------------
 
@@ -127,9 +124,7 @@ namespace ch8scr
 			++cursor;
 			ASTNode var_decl = ASTNode{ ASTNodeType::VarDeclaration, cursor->value, {} };
 			if ((++cursor)->value.front() != '=')
-			{
 				throw std::runtime_error("Expected `=`!");
-			}
 			var_decl.params.push_back(walk(++cursor, token_list));
 
 			return var_decl;
@@ -138,7 +133,7 @@ namespace ch8scr
 		if (tok.type == TokenType::Identifier)
 		{
 			ASTNode var_expr = ASTNode{ ASTNodeType::VarExpression, tok.value, {} };
-			(++cursor);
+			++cursor;
 			if (cursor->value == "+=")
 			{
 				var_expr.params.push_back(ASTNode{ ASTNodeType::Operator, cursor->value, {} });
@@ -146,40 +141,24 @@ namespace ch8scr
 				if (cursor->type == TokenType::Identifier)
 				{
 					var_expr.params[0].params.push_back(ASTNode{ ASTNodeType::Identifier, cursor->value, {} });
-					++cursor;
-					if (cursor->type == TokenType::ClosingStatement)
-					{
-						++cursor;
-					}
-					else
-					{
+					if ((++cursor)->type != TokenType::ClosingStatement)
 						throw std::runtime_error("Expected closing statement!");
-					}
+					++cursor;
 					return var_expr;
 				}
 				else if (cursor->type == TokenType::Numerical)
 				{
 					var_expr.params[0].params.push_back(ASTNode{ ASTNodeType::NumberLiteral, cursor->value, {} });
-					++cursor;
-					if (cursor->type == TokenType::ClosingStatement)
-					{
-						++cursor;
-					}
-					else
-					{
+					if ((++cursor)->type != TokenType::ClosingStatement)
 						throw std::runtime_error("Expected closing statement!");
-					}
+					++cursor;
 					return var_expr;
 				}
-				else
-				{
+				else 
 					throw std::runtime_error("Expected an identifier or number literal!");
-				}
 			}
 			else 
-			{
 				throw std::runtime_error("Unknown operator!");
-			}
 		}
 
 		if (tok.type == TokenType::EndOfProgram)
