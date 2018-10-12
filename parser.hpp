@@ -1,102 +1,31 @@
 #pragma once
 #include <iostream>
 #include <cstdlib>
-#include <cctype>
-#include <string>
-#include <vector>
-#include <functional>
 #include <exception>
-#include <algorithm> // std::transform
+#include <array>
 
-#define INT_FUNC(f) static_cast<int(*)(int)>(f) 
+#include "tokenizer.hpp"
 
 namespace ch8scr
 {
-	enum class TokenType { Var, Identifier, Operator, Numerical, ClosingStatement, EndOfProgram };
-
-	// A single token.
-	struct Token
-	{
-		Token(TokenType type, std::string value) : type{ type }, value{ value } {}
-		TokenType type; // Possible: declaration, identifier, operator, numerical, closer.
-		std::string value;
+	// Different types of AST-nodes.
+	enum class ASTNodeType
+	{ 
+		Program, 
+		EndOfProgram, 
+		Error, 
+		Statement, 
+		Operator, 
+		VarDeclaration, 
+		VarExpression, 
+		Identifier, 
+		NumberLiteral 
 	};
 
-	// Read characters with the cursor until the validator returns false.
-	std::string read_token_string(std::string& input_code, std::string::iterator& cursor, std::function<int(int)> validator)
-	{
-		std::string token;
-		for (; cursor != input_code.end() && validator(*cursor); ++cursor)
-		{
-			token += *cursor;
-		}
-		return token;
-	}
-
-	// Parse the input code into a list of tokens.
-	std::vector<Token> tokenize(std::string input_code)
-	{
-		// Append newline or semicolon to the end of the code if missing.
-		char last_char_in_code = input_code[input_code.length() - 1];
-		if (last_char_in_code != ';' && last_char_in_code != '\n')
-		{
-			input_code += ';';
-		}
-
-		// Convert `input_code` into lowercase.
-		std::transform(input_code.begin(), input_code.end(), input_code.begin(), INT_FUNC(std::tolower));
-
-		std::vector<Token> tokens;
-		auto cursor = input_code.begin();
-
-		while (cursor != input_code.end())
-		{
-			char current_char = *cursor;
-
-			// Newline and semicolon (End of statement).
-			if (current_char == '\n' || current_char == ';')
-			{
-				tokens.push_back(Token{ TokenType::ClosingStatement, std::string{ ';' } });
-				++cursor;
-			}
-			// Tab and whitespace.
-			else if (std::isblank(current_char))
-			{
-				++cursor;
-			}
-			// Operators.
-			else if (current_char == '=' || current_char == '+')
-			{
-				std::string tok = read_token_string(input_code, cursor, INT_FUNC(std::ispunct));
-				tokens.push_back(Token{ TokenType::Operator, tok });
-			}
-			// Numerical.
-			else if (std::isdigit(current_char))
-			{
-				std::string tok = read_token_string(input_code, cursor, INT_FUNC(std::isdigit));
-				tokens.push_back(Token{ TokenType::Numerical, tok });
-			}
-			// Letters.
-			else if (std::isalpha(current_char))
-			{
-				std::string tok = read_token_string(input_code, cursor, INT_FUNC(std::isalpha));
-				if (tok == "var") tokens.push_back(Token{ TokenType::Var, tok });
-				else tokens.push_back(Token{ TokenType::Identifier, tok });
-			}
-			else
-				throw std::runtime_error("Unexpected character in input code: " + current_char + '\n');
-		}
-
-		tokens.push_back(Token{ TokenType::EndOfProgram, "end" });
-
-		return tokens;
-	}
-
-#undef INT_FUNC
-
-	// -------------------------------------------------------------------------
-
-	enum class ASTNodeType{ Program, EndOfProgram, Error, Statement, Operator, VarDeclaration, VarExpression, Identifier, NumberLiteral };
+	// List of all supported operators.
+	const std::array<std::string, 10> valid_operators = {
+		"=", "==", "!=", "+=", "-=", "<<=", ">>=", "|=", "&=", "^="
+	};
 
 	// A node in the abstract syntax tree.
 	struct ASTNode
@@ -124,7 +53,7 @@ namespace ch8scr
 			++cursor;
 			ASTNode var_decl = ASTNode{ ASTNodeType::VarDeclaration, cursor->value, {} };
 			if ((++cursor)->value.front() != '=')
-				throw std::runtime_error("Expected `=`!");
+				return ASTNode{ ASTNodeType::Error, ("Expected assignment operator `=`!"),{} };
 			var_decl.params.push_back(walk(++cursor, token_list));
 
 			return var_decl;
@@ -134,7 +63,8 @@ namespace ch8scr
 		{
 			ASTNode var_expr = ASTNode{ ASTNodeType::VarExpression, tok.value, {} };
 			++cursor;
-			if (cursor->value == "+=")
+			if (cursor->type == TokenType::Operator &&
+				std::find(valid_operators.begin(), valid_operators.end(), cursor->value) != valid_operators.end()) 
 			{
 				var_expr.params.push_back(ASTNode{ ASTNodeType::Operator, cursor->value, {} });
 				++cursor;
@@ -142,7 +72,7 @@ namespace ch8scr
 				{
 					var_expr.params[0].params.push_back(ASTNode{ ASTNodeType::Identifier, cursor->value, {} });
 					if ((++cursor)->type != TokenType::ClosingStatement)
-						throw std::runtime_error("Expected closing statement!");
+						return ASTNode{ ASTNodeType::Error, ("Expected closing statement!"),{} };
 					++cursor;
 					return var_expr;
 				}
@@ -150,15 +80,15 @@ namespace ch8scr
 				{
 					var_expr.params[0].params.push_back(ASTNode{ ASTNodeType::NumberLiteral, cursor->value, {} });
 					if ((++cursor)->type != TokenType::ClosingStatement)
-						throw std::runtime_error("Expected closing statement!");
+						return ASTNode{ ASTNodeType::Error, ("Expected closing statement!"),{} };
 					++cursor;
 					return var_expr;
 				}
 				else 
-					throw std::runtime_error("Expected an identifier or number literal!");
+					return ASTNode{ ASTNodeType::Error, ("Unexpected token " + cursor->value), {} };
 			}
 			else 
-				throw std::runtime_error("Unknown operator!");
+				return ASTNode{ ASTNodeType::Error, ("Unknown operand!"), {} };
 		}
 
 		if (tok.type == TokenType::EndOfProgram)
@@ -176,6 +106,13 @@ namespace ch8scr
 	{
 		auto cursor = token_list.begin();
 		auto ast = ASTNode{ ASTNodeType::Program, "", {} };
+
+		// Check for errors in the input token-list.
+		if (token_list.back().type == TokenType::Error)
+		{
+			ast.value = "error";
+			return ast;
+		}
 
 		while (cursor != token_list.end())
 		{
