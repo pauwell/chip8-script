@@ -1,7 +1,6 @@
 #include <iostream>
 #include <vector>
-#include "parser.hpp"
-#include "variable.hpp"
+#include "generator.hpp"
 
 // Debug output ast.
 void print_ast(ch8scr::ASTNode node, unsigned depth=0)
@@ -23,10 +22,16 @@ void print_ast(ch8scr::ASTNode node, unsigned depth=0)
 	}
 }
 
-int main() 
+int main()
 {
 	// Test parser.
-	std::string code = "var A = 30; var B = 40\nB += 20;B += A\nB |= 20;var X = 0; X &= 100";
+	std::string code =
+		"var A = 8\n"\
+		"var B = 16\n"\
+		"var C = A\n"\
+		"A += B\n"\
+		"A += 8\n";
+
 	auto tokens = ch8scr::tokenize(code);
 	auto ast = ch8scr::parse(tokens);
 	for (auto& e : tokens)
@@ -42,23 +47,14 @@ int main()
 			std::cout << "Closing statement, ";
 		std::cout << e.value << "]\n";
 	}
-
 	print_ast(ast);
 
-	// Test variables.
-	/*std::vector<ch8scr::u16> ops;
-	ch8scr::create_variable("A");
-	ch8scr::create_variable("B");
-	ops.push_back(ch8scr::variable_set_value("A", 12));
-	ops.push_back(ch8scr::variable_set_value("B", 34));
-	ops.push_back(ch8scr::variable_set_value("B", 221));*/
+	auto ops = ch8scr::generate_asm(ast);
+	for (auto op : ops)
+	{
+		std::cout << "0x" << std::hex << op << '\n';
+	}
 
-	/*for (const auto& e : ops) {
-		std::cout << std::hex << e << '\n';
-	}*/
-
-	//std::cout << (int)ch8scr::variables["Test"].value;
-	//std::cout << ch8scr::variables.size();
-
+	std::cin.get();
 	return 0;
 }
