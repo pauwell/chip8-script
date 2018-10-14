@@ -75,7 +75,13 @@ namespace ch8scr
 						u8 v_index = find_var_index(source_node.value, variables);
 						std::cout << "Expr: " << source_node.value << operator_node.value << (int)value_u8 << '\n';
 
-						if (operator_node.value == "+=")
+						if (operator_node.value == "=")
+						{
+							// 6XNN	Const	Vx = NN		Sets VX to NN.
+							u16 op = ((0x6 << 12) | (v_index << 8) | (value_u8 & 0xFF));
+							opcodes.push_back(op);
+						}
+						else if (operator_node.value == "+=")
 						{
 							// 7XNN	Const	Vx += NN	Adds NN to VX. (Carry flag is not changed)
 							u16 op = ((0x7 << 12) | (v_index << 8) | (value_u8 & 0xFF));
@@ -90,7 +96,13 @@ namespace ch8scr
 						u8 target_v_index = find_var_index(target_node.value, variables);
 						std::cout << "Expr: " << source_node.value << operator_node.value << target_node.value << '\n';
 
-						if (operator_node.value == "+=")
+						if (operator_node.value == "=")
+						{
+							// 8XY0	Assign	Vx=Vy	Sets VX to the value of VY.
+							u16 op = ((0x8 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x0));
+							opcodes.push_back(op);
+						}
+						else if (operator_node.value == "+=")
 						{
 							// 8XY4	Math	Vx += Vy	Adds VY to VX. VF is set to 1 when there's a carry, and to 0 when there isn't.
 							u16 op = ((0x8 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x4));

@@ -28,7 +28,7 @@ int main()
 	std::string code =
 		"var A = 8\n"\
 		"var B = 16\n"\
-		"var C = A\n"\
+		"A = 10\n"\
 		"A += B\n"\
 		"A += 8\n";
 
