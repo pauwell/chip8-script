@@ -29,6 +29,7 @@ int main()
 		"var A = 8\n"\
 		"var B = 16\n"\
 		"A = 10\n"\
+		"A = B\n"\
 		"A += B\n"\
 		"A += 8\n";
 

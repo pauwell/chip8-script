@@ -49,6 +49,8 @@ namespace ch8scr
 					{
 						if (std::find(variables.begin(), variables.end(), source_name) == variables.end())
 						{
+							// BUG the following doesnt seem to work with script: var A = B.
+
 							// 8XY0	Assign	Vx=Vy	Sets VX to the value of VY.
 							variables.push_back(source_name);
 							u8 target_v_index = find_var_index(target_node.value, variables);
