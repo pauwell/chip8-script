@@ -31,7 +31,10 @@ int main()
 		"A = 10\n"\
 		"A = B\n"\
 		"A += B\n"\
-		"A += 8\n";
+		"A += 8\n"\
+		"A |= B\n"\
+		"A &= B\n"\
+		"A ^= B\n";
 
 	auto tokens = ch8scr::tokenize(code);
 	auto ast = ch8scr::parse(tokens);
