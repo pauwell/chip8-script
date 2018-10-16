@@ -26,15 +26,9 @@ int main()
 {
 	// Test parser.
 	std::string code =
-		"var A = 8\n"\
-		"var B = 16\n"\
-		"A = 10\n"\
-		"A = B\n"\
-		"A += B\n"\
-		"A += 8\n"\
-		"A |= B\n"\
-		"A &= B\n"\
-		"A ^= B\n";
+		"var A = 6\n"\
+		"var B = A\n"\
+		"B += 5";
 
 	auto tokens = ch8scr::tokenize(code);
 	auto ast = ch8scr::parse(tokens);

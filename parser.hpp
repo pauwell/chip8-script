@@ -87,6 +87,11 @@ namespace ch8scr
 				else 
 					return ASTNode{ ASTNodeType::Error, ("Unexpected token " + cursor->value), {} };
 			}
+			else if (cursor->type == TokenType::ClosingStatement)
+			{
+				// If an identifier is followed by a closing statement, we just return it as an `Identifier`. 
+				return ASTNode{ ASTNodeType::Identifier, tok.value, {} };
+			}
 			else 
 				return ASTNode{ ASTNodeType::Error, ("Unknown operand!"), {} };
 		}
@@ -116,6 +121,7 @@ namespace ch8scr
 
 		while (cursor != token_list.end())
 		{
+			// Skip closing-statements.
 			if (cursor->type == TokenType::ClosingStatement)
 			{
 				++cursor;

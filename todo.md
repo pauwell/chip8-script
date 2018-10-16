@@ -14,7 +14,7 @@
 | <ul><li>- [ ] </li></ul> | 5XY0 | Cond | if(Vx==Vy) | *todo* |	
 | <ul><li>- [x] </li></ul> | 6XNN | Const | Vx = NN | <code>var x = 0</code>, <code>x = 10</code> |	
 | <ul><li>- [x] </li></ul> | 7XNN | Const | Vx += NN | <code>a += 8</code> |	
-| <ul><li>- [x] </li></ul> | 8XY0 | Assig | Vx=Vy | ~~<code>var a = b</code>~~(fails), <code>a = b</code> |
+| <ul><li>- [x] </li></ul> | 8XY0 | Assig | Vx=Vy | <code>var a = b</code>, <code>a = b</code> |
 | <ul><li>- [x] </li></ul> | 8XY1 | BitOp | Vx=Vx\|Vy | <code>a \|= b</code> |	
 | <ul><li>- [x] </li></ul> | 8XY2 | BitOp | Vx=Vx&Vy | <code>a &= b</code> |	
 | <ul><li>- [x] </li></ul> | 8XY3 | BitOp | Vx=Vx^Vy | <code>a ^= b</code> |	
