@@ -38,6 +38,15 @@ namespace ch8scr
 		std::vector<ASTNode> params;
 	};
 
+	template<typename T>
+	auto create_node_and_walk(ASTNodeType node_type, Token tok, std::vector<Token>::iterator &cursor,  T walk)
+	{
+		ASTNode node = ASTNode{ node_type, tok.value,{} };
+		if ((++cursor)->type != TokenType::ClosingStatement)
+			node.params.push_back(walk(cursor, node));
+		return node;
+	}
+
 	// Walk the token list.
 	ASTNode walk(std::vector<Token>::iterator &cursor, const ASTNode& parent)
 	{
@@ -73,47 +82,32 @@ namespace ch8scr
 		{
 			if (tok.type == TokenType::Operator)
 			{
-				ASTNode operator_node = ASTNode{ ASTNodeType::Operator, tok.value,{} };
-				if ((++cursor)->type != TokenType::ClosingStatement)
-					operator_node.params.push_back(walk(cursor, operator_node));
-				return operator_node;
+				return create_node_and_walk(ASTNodeType::Operator, tok, cursor, walk);
 			}
 		}
 		else if (parent.type == ASTNodeType::Operator)
 		{
 			if (tok.type == TokenType::Identifier)
 			{
-				ASTNode identifier_node = ASTNode{ ASTNodeType::Identifier, tok.value,{} };
-				if ((++cursor)->type != TokenType::ClosingStatement)
-					identifier_node.params.push_back(walk(cursor, identifier_node));
-				return identifier_node;
+				return create_node_and_walk(ASTNodeType::Identifier, tok, cursor, walk);
 			}
 		}
 		else if (parent.type == ASTNodeType::VarDeclaration)
 		{
 			if (tok.type == TokenType::Identifier)
 			{
-				ASTNode identifier_node = ASTNode{ ASTNodeType::Identifier, tok.value,{} };
-				if ((++cursor)->type != TokenType::ClosingStatement)
-					identifier_node.params.push_back(walk(cursor, identifier_node));
-				return identifier_node;
+				return create_node_and_walk(ASTNodeType::Identifier, tok, cursor, walk);
 			}
 			else if (tok.type == TokenType::Operator)
 			{
-				ASTNode operator_node = ASTNode{ ASTNodeType::Operator, tok.value,{} };
-				if((++cursor)->type != TokenType::ClosingStatement)
-					operator_node.params.push_back(walk(cursor, operator_node));
-				return operator_node;
+				return create_node_and_walk(ASTNodeType::Operator, tok, cursor, walk);
 			}
 		}
 		else if (parent.type == ASTNodeType::VarExpression)
 		{
 			if (tok.type == TokenType::Operator)
 			{
-				ASTNode operator_node = ASTNode{ ASTNodeType::Operator, tok.value,{} };
-				if ((++cursor)->type != TokenType::ClosingStatement)
-					operator_node.params.push_back(walk(cursor, operator_node));
-				return operator_node;
+				return create_node_and_walk(ASTNodeType::Operator, tok, cursor, walk);
 			}
 		}
 		
