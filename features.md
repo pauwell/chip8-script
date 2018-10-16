@@ -2,6 +2,7 @@
 
 ## List of all chip8 opcodes and their chip8-script equivalent
 Under construction :construction:
+
 | Supported | Opcode | Type | C | Chip-8 script |
 | --- | --- | --- | --- | --- |
 | <ul><li>- [ ] </li></ul> | 0NNN | Call | RCA 1802 at address NNN. | *todo* |
