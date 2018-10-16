@@ -13,9 +13,12 @@ namespace ch8scr
 	enum class TokenType 
 	{ 
 		Var, 
+		If,
+		Endif,
+		Colon, 
 		Identifier, 
 		Operator, 
-		Numerical, 
+		Numerical,
 		ClosingStatement, 
 		Error, 
 		EndOfProgram 
@@ -64,7 +67,14 @@ namespace ch8scr
 			// Newline and semicolon (End of statement).
 			if (current_char == '\n' || current_char == ';')
 			{
-				tokens.push_back(Token{ TokenType::ClosingStatement, std::string{ ';' } });
+				if(tokens.back().type != TokenType::ClosingStatement)
+					tokens.push_back(Token{ TokenType::ClosingStatement, ";" });
+				++cursor;
+			}
+			// Colons (that introduce if-statements).
+			else if (current_char == ':')
+			{
+				tokens.push_back(Token{ TokenType::Colon, ":" });
 				++cursor;
 			}
 			// Tab and whitespace.
@@ -89,6 +99,8 @@ namespace ch8scr
 			{
 				std::string tok = read_token_string(input_code, cursor, INT_FUNC(std::isalpha));
 				if (tok == "var") tokens.push_back(Token{ TokenType::Var, tok });
+				else if (tok == "if") tokens.push_back(Token{ TokenType::If, tok });
+				else if (tok == "endif") tokens.push_back(Token{ TokenType::Endif, tok });
 				else tokens.push_back(Token{ TokenType::Identifier, tok });
 			}
 			else

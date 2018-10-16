@@ -18,6 +18,7 @@ namespace ch8scr
 		Operator, 
 		VarDeclaration, 
 		VarExpression, 
+		IfStatement,
 		Identifier, 
 		NumberLiteral 
 	};
@@ -38,7 +39,7 @@ namespace ch8scr
 	};
 
 	// Walk the token list.
-	ASTNode walk(std::vector<Token>::iterator &cursor, std::vector<Token> &token_list)
+	ASTNode walk(std::vector<Token>::iterator &cursor, const ASTNode& parent)
 	{
 		const Token &tok = *cursor;
 
@@ -47,55 +48,75 @@ namespace ch8scr
 			++cursor;
 			return ASTNode{ ASTNodeType::NumberLiteral, tok.value, {} };
 		}
-			
-		if (tok.type == TokenType::Var)
+
+		if (parent.type == ASTNodeType::Statement)
 		{
-			++cursor;
-			ASTNode var_decl = ASTNode{ ASTNodeType::VarDeclaration, cursor->value, {} };
-			if ((++cursor)->value.front() != '=')
-				return ASTNode{ ASTNodeType::Error, ("Expected assignment operator `=`!"),{} };
-			var_decl.params.push_back(walk(++cursor, token_list));
-
-			return var_decl;
-		}
-
-		if (tok.type == TokenType::Identifier)
+			if (tok.type == TokenType::Var)
+			{
+				ASTNode var_decl = ASTNode{ ASTNodeType::VarDeclaration, (++cursor)->value,{} };
+				var_decl.params.push_back(walk(++cursor, var_decl));
+				return var_decl;
+			}
+			else if (tok.type == TokenType::Identifier)
+			{
+				ASTNode var_expr = ASTNode{ ASTNodeType::VarExpression, tok.value, {} };
+				var_expr.params.push_back(walk(++cursor, var_expr));
+				return var_expr;
+				
+			}
+			else if (tok.type == TokenType::If)
+			{
+				// TODO implement if-statement.
+			}
+		}	
+		else if (parent.type == ASTNodeType::Identifier)
 		{
-			ASTNode var_expr = ASTNode{ ASTNodeType::VarExpression, tok.value, {} };
-			++cursor;
-			if (cursor->type == TokenType::Operator &&
-				std::find(valid_operators.begin(), valid_operators.end(), cursor->value) != valid_operators.end()) 
+			if (tok.type == TokenType::Operator)
 			{
-				var_expr.params.push_back(ASTNode{ ASTNodeType::Operator, cursor->value, {} });
-				++cursor;
-				if (cursor->type == TokenType::Identifier)
-				{
-					var_expr.params[0].params.push_back(ASTNode{ ASTNodeType::Identifier, cursor->value, {} });
-					if ((++cursor)->type != TokenType::ClosingStatement)
-						return ASTNode{ ASTNodeType::Error, ("Expected closing statement!"),{} };
-					++cursor;
-					return var_expr;
-				}
-				else if (cursor->type == TokenType::Numerical)
-				{
-					var_expr.params[0].params.push_back(ASTNode{ ASTNodeType::NumberLiteral, cursor->value, {} });
-					if ((++cursor)->type != TokenType::ClosingStatement)
-						return ASTNode{ ASTNodeType::Error, ("Expected closing statement!"),{} };
-					++cursor;
-					return var_expr;
-				}
-				else 
-					return ASTNode{ ASTNodeType::Error, ("Unexpected token " + cursor->value), {} };
+				ASTNode operator_node = ASTNode{ ASTNodeType::Operator, tok.value,{} };
+				if ((++cursor)->type != TokenType::ClosingStatement)
+					operator_node.params.push_back(walk(cursor, operator_node));
+				return operator_node;
 			}
-			else if (cursor->type == TokenType::ClosingStatement)
-			{
-				// If an identifier is followed by a closing statement, we just return it as an `Identifier`. 
-				return ASTNode{ ASTNodeType::Identifier, tok.value, {} };
-			}
-			else 
-				return ASTNode{ ASTNodeType::Error, ("Unknown operand!"), {} };
 		}
-
+		else if (parent.type == ASTNodeType::Operator)
+		{
+			if (tok.type == TokenType::Identifier)
+			{
+				ASTNode identifier_node = ASTNode{ ASTNodeType::Identifier, tok.value,{} };
+				if ((++cursor)->type != TokenType::ClosingStatement)
+					identifier_node.params.push_back(walk(cursor, identifier_node));
+				return identifier_node;
+			}
+		}
+		else if (parent.type == ASTNodeType::VarDeclaration)
+		{
+			if (tok.type == TokenType::Identifier)
+			{
+				ASTNode identifier_node = ASTNode{ ASTNodeType::Identifier, tok.value,{} };
+				if ((++cursor)->type != TokenType::ClosingStatement)
+					identifier_node.params.push_back(walk(cursor, identifier_node));
+				return identifier_node;
+			}
+			else if (tok.type == TokenType::Operator)
+			{
+				ASTNode operator_node = ASTNode{ ASTNodeType::Operator, tok.value,{} };
+				if((++cursor)->type != TokenType::ClosingStatement)
+					operator_node.params.push_back(walk(cursor, operator_node));
+				return operator_node;
+			}
+		}
+		else if (parent.type == ASTNodeType::VarExpression)
+		{
+			if (tok.type == TokenType::Operator)
+			{
+				ASTNode operator_node = ASTNode{ ASTNodeType::Operator, tok.value,{} };
+				if ((++cursor)->type != TokenType::ClosingStatement)
+					operator_node.params.push_back(walk(cursor, operator_node));
+				return operator_node;
+			}
+		}
+		
 		if (tok.type == TokenType::EndOfProgram)
 		{
 			++cursor;
@@ -130,7 +151,7 @@ namespace ch8scr
 
 			// Add statements and recursively call `walk()` on their parameters.
 			ASTNode stmt = ASTNode{ ASTNodeType::Statement, "stmt", {} };
-			stmt.params.push_back(walk(cursor, token_list));
+			stmt.params.push_back(walk(cursor, stmt));
 			ast.params.push_back(stmt);
 		}
 
