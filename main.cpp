@@ -32,6 +32,9 @@ int main()
 	std::string code =
 		"var A = 6;;\n"\
 		"if A == 6:\n"\
+		"if A==3:\n"\
+		"	A+=2\n"\
+		"endif\n"\
 		"	A+=6\n"\
 		"endif";
 

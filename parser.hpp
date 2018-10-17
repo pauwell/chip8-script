@@ -138,9 +138,36 @@ namespace ch8scr
 
 	// Every statement between `if` and `endif` is moved into the `params` 
 	// of the `if`statement. The `endif` statement gets removed.
-	bool move_condition_bodies_to_params()
+	bool move_condition_bodies_to_params(ASTNode& ast)
 	{
-		// TODO implement
+		// Save the indices of all if-statements in the stmt-list of the program-root.
+		std::vector<unsigned> if_statement_positions{};
+		for (unsigned i = 0; i < ast.params.size(); ++i)
+		{
+			if (ast.params[i].params.front().type == ASTNodeType::IfStatement)
+				if_statement_positions.push_back(i);
+		}
+
+		// Start at the last if-statement.
+		for (unsigned i = if_statement_positions.size(); i > 0; --i)
+		{
+			unsigned counter = if_statement_positions[i - 1];
+			while (ast.params[counter].params.front().type != ASTNodeType::EndifStatement)
+			{
+				// Copy over to the parameters of the if-statement.
+				ast.params[i].params.push_back(ast.params[++counter]);
+				ast.params.erase(ast.params.begin() + counter);
+			}
+		}
+
+		// Remove all endif-nodes from the stmt-list of the program-root.
+		unsigned idx = 0;
+		for (auto& node : ast.params)
+		{
+			if (!node.params.empty() && node.params.front().type == ASTNodeType::EndifStatement)
+				ast.params.erase(ast.params.begin() + idx);
+			++idx;
+		}
 
 		return true;
 	}
@@ -173,7 +200,7 @@ namespace ch8scr
 			ast.params.push_back(stmt);
 		}
 
-		move_condition_bodies_to_params();
+		move_condition_bodies_to_params(ast);
 
 		return ast;
 	}
