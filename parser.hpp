@@ -19,6 +19,7 @@ namespace ch8scr
 		VarDeclaration, 
 		VarExpression, 
 		IfStatement,
+		EndifStatement,
 		Identifier, 
 		NumberLiteral 
 	};
@@ -52,12 +53,6 @@ namespace ch8scr
 	{
 		const Token &tok = *cursor;
 
-		if (tok.type == TokenType::Numerical)
-		{
-			++cursor;
-			return ASTNode{ ASTNodeType::NumberLiteral, tok.value, {} };
-		}
-
 		if (parent.type == ASTNodeType::Statement)
 		{
 			if (tok.type == TokenType::Var)
@@ -66,16 +61,16 @@ namespace ch8scr
 				var_decl.params.push_back(walk(++cursor, var_decl));
 				return var_decl;
 			}
-			else if (tok.type == TokenType::Identifier)
+			if (tok.type == TokenType::Identifier)
 			{
 				ASTNode var_expr = ASTNode{ ASTNodeType::VarExpression, tok.value, {} };
 				var_expr.params.push_back(walk(++cursor, var_expr));
 				return var_expr;
 				
 			}
-			else if (tok.type == TokenType::If)
+			if (tok.type == TokenType::If)
 			{
-				// TODO implement if-statement.
+				return create_node_and_walk(ASTNodeType::IfStatement, tok, cursor, walk);
 			}
 		}	
 		else if (parent.type == ASTNodeType::Identifier)
@@ -91,6 +86,10 @@ namespace ch8scr
 			{
 				return create_node_and_walk(ASTNodeType::Identifier, tok, cursor, walk);
 			}
+			if (tok.type == TokenType::Numerical)
+			{
+				return create_node_and_walk(ASTNodeType::NumberLiteral, tok, cursor, walk);
+			}
 		}
 		else if (parent.type == ASTNodeType::VarDeclaration)
 		{
@@ -98,7 +97,7 @@ namespace ch8scr
 			{
 				return create_node_and_walk(ASTNodeType::Identifier, tok, cursor, walk);
 			}
-			else if (tok.type == TokenType::Operator)
+			if (tok.type == TokenType::Operator)
 			{
 				return create_node_and_walk(ASTNodeType::Operator, tok, cursor, walk);
 			}
@@ -110,7 +109,23 @@ namespace ch8scr
 				return create_node_and_walk(ASTNodeType::Operator, tok, cursor, walk);
 			}
 		}
+		else if (parent.type == ASTNodeType::IfStatement)
+		{
+			return create_node_and_walk(ASTNodeType::IfStatement, tok, cursor, walk);
+		}
 		
+		if (tok.type == TokenType::Endif)
+		{
+			++cursor;
+			return ASTNode{ ASTNodeType::EndifStatement, tok.value, {} };
+		}
+
+		if (tok.type == TokenType::Numerical)
+		{
+			++cursor;
+			return ASTNode{ ASTNodeType::NumberLiteral, tok.value,{} };
+		}
+
 		if (tok.type == TokenType::EndOfProgram)
 		{
 			++cursor;
@@ -119,6 +134,15 @@ namespace ch8scr
 
 		++cursor;
 		return ASTNode{ ASTNodeType::Error, "@no_impl", {} };
+	}
+
+	// Every statement between `if` and `endif` is moved into the `params` 
+	// of the `if`statement. The `endif` statement gets removed.
+	bool move_condition_bodies_to_params()
+	{
+		// TODO implement
+
+		return true;
 	}
 
 	// Parse the list of tokens into an AST.
@@ -148,6 +172,8 @@ namespace ch8scr
 			stmt.params.push_back(walk(cursor, stmt));
 			ast.params.push_back(stmt);
 		}
+
+		move_condition_bodies_to_params();
 
 		return ast;
 	}

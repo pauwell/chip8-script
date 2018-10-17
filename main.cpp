@@ -25,15 +25,15 @@ void print_ast(ch8scr::ASTNode node, unsigned depth=0)
 int main()
 {
 	// Test parser.
-	std::string code =
+	/*std::string code =
 		"var A = 10\n"\
 		"var B = A;\n"\
-		"A += 4";
-	/*std::string code =
+		"A += 4";*/
+	std::string code =
 		"var A = 6;;\n"\
 		"if A == 6:\n"\
 		"	A+=6\n"\
-		"endif";*/
+		"endif";
 
 	auto tokens = ch8scr::tokenize(code);
 	auto ast = ch8scr::parse(tokens);
