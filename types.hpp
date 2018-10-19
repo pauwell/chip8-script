@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ch8scr
+namespace c8s
 {
 	typedef unsigned char u8;
 	typedef unsigned short u16;

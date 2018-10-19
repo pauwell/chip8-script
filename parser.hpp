@@ -6,22 +6,22 @@
 
 #include "tokenizer.hpp"
 
-namespace ch8scr
+namespace c8s
 {
 	// Different types of AST-nodes.
 	enum class ASTNodeType
 	{ 
-		Program,		// Root node of the AST.
+		Program,	// Root node of the AST.
 		EndOfProgram,	// Must be the last statement in the program.
-		Error,			// Gets inserted to show where an error happened.
-		Deletable,		// Nodes that are `Deletable` should be removed.
-		Statement,		// A single statement.
-		Operator,		// ==, +=, + ...
+		Error,		// Gets inserted to show where an error happened.
+		Deletable,	// Nodes that are `Deletable` should be removed.
+		Statement,	// A single statement.
+		Operator,	// ==, +=, + ...
 		VarDeclaration,	// var XYZ
 		VarExpression,	// X += Y
 		IfStatement,	// if A==B:
 		EndifStatement,	// End marker for if-statement bodies.
-		Identifier,		// Name of a (valid) variable.
+		Identifier,	// Name of a (valid) variable.
 		NumberLiteral	// Any number (1,2,3 ...)
 	};
 
@@ -149,12 +149,11 @@ namespace ch8scr
 
 	// Every statement between `if` and `endif` is moved into the `params` 
 	// of the `if`statement. The `endif` statement gets removed.
-	bool move_condition_bodies_to_params(ASTNode& ast)
+	void move_condition_bodies_to_params(ASTNode& ast)
 	{
-		// Repeat the following until all if-nodes are parsed.
-		for (;;) { // TODO find a better loop condition
-
-				   // Find the last/innermost if-statement node that does not yet have more than one parent.
+		for (;;) 
+		{
+			// Find the last/innermost if-statement node that does not yet have more than one parent.
 			unsigned innermost_if_stmt_index = 0;
 			for (unsigned i = 0; i < ast.params.size(); ++i)
 			{
@@ -193,8 +192,6 @@ namespace ch8scr
 			// Clean up nodes that were marked as `deletable`.
 			remove_deletables(ast);
 		}
-
-		return true;
 	}
 
 	// Parse the list of tokens into an AST.

@@ -7,7 +7,7 @@
 
 #define INT_FUNC(f) static_cast<int(*)(int)>(f) 
 
-namespace ch8scr
+namespace c8s
 {
 	// Different types of tokens.
 	enum class TokenType 

@@ -2,7 +2,7 @@
 #include "parser.hpp"
 #include "types.hpp"
 
-namespace ch8scr
+namespace c8s
 {
 	unsigned find_var_index(std::string name, std::vector<std::string>& variables)
 	{
