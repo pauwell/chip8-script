@@ -11,17 +11,18 @@ namespace ch8scr
 	// Different types of AST-nodes.
 	enum class ASTNodeType
 	{ 
-		Program, 
-		EndOfProgram, 
-		Error, 
-		Statement, 
-		Operator, 
-		VarDeclaration, 
-		VarExpression, 
-		IfStatement,
-		EndifStatement,
-		Identifier, 
-		NumberLiteral 
+		Program,		// Root node of the AST.
+		EndOfProgram,	// Must be the last statement in the program.
+		Error,			// Gets inserted to show where an error happened.
+		Deletable,		// Nodes that are `Deletable` should be removed.
+		Statement,		// A single statement.
+		Operator,		// ==, +=, + ...
+		VarDeclaration,	// var XYZ
+		VarExpression,	// X += Y
+		IfStatement,	// if A==B:
+		EndifStatement,	// End marker for if-statement bodies.
+		Identifier,		// Name of a (valid) variable.
+		NumberLiteral	// Any number (1,2,3 ...)
 	};
 
 	// List of all supported operators.
@@ -39,6 +40,16 @@ namespace ch8scr
 		std::vector<ASTNode> params;
 	};
 
+	// Remove every node from the AST that is marked as `Deletable`.
+	void remove_deletables(ASTNode& ast)
+	{
+		ast.params.erase(std::remove_if(ast.params.begin(), ast.params.end(),
+			[](const ASTNode& node) { return node.type == ASTNodeType::Deletable; }),
+			ast.params.end()
+		);
+	}
+
+	// Create a new node of a given type and continue `walking` the tree.
 	template<typename T>
 	auto create_node_and_walk(ASTNodeType node_type, Token tok, std::vector<Token>::iterator &cursor,  T walk)
 	{
@@ -140,33 +151,47 @@ namespace ch8scr
 	// of the `if`statement. The `endif` statement gets removed.
 	bool move_condition_bodies_to_params(ASTNode& ast)
 	{
-		// Save the indices of all if-statements in the stmt-list of the program-root.
-		std::vector<unsigned> if_statement_positions{};
-		for (unsigned i = 0; i < ast.params.size(); ++i)
-		{
-			if (ast.params[i].params.front().type == ASTNodeType::IfStatement)
-				if_statement_positions.push_back(i);
-		}
+		// Repeat the following until all if-nodes are parsed.
+		for (;;) { // TODO find a better loop condition
 
-		// Start at the last if-statement.
-		for (unsigned i = if_statement_positions.size(); i > 0; --i)
-		{
-			unsigned counter = if_statement_positions[i - 1];
-			while (ast.params[counter].params.front().type != ASTNodeType::EndifStatement)
+				   // Find the last/innermost if-statement node that does not yet have more than one parent.
+			unsigned innermost_if_stmt_index = 0;
+			for (unsigned i = 0; i < ast.params.size(); ++i)
 			{
-				// Copy over to the parameters of the if-statement.
-				ast.params[i].params.push_back(ast.params[++counter]);
-				ast.params.erase(ast.params.begin() + counter);
+				if (ast.params[i].params.front().type == ASTNodeType::IfStatement && ast.params[i].params.size() <= 1)
+				{
+					innermost_if_stmt_index = i;
+				}
 			}
-		}
 
-		// Remove all endif-nodes from the stmt-list of the program-root.
-		unsigned idx = 0;
-		for (auto& node : ast.params)
-		{
-			if (!node.params.empty() && node.params.front().type == ASTNodeType::EndifStatement)
-				ast.params.erase(ast.params.begin() + idx);
-			++idx;
+			// Finish the loop if no if-nodes were left to find.
+			if (innermost_if_stmt_index == 0)
+			{
+				break;
+			}
+
+			// Push the nodes that follow onto the if-statement's `params` until `endif` is reached.
+			for (unsigned i = innermost_if_stmt_index + 1; ast.params[i].params.front().type != ASTNodeType::EndifStatement; ++i) // does `i<params.size()` even make sense!?
+			{
+				// Copy the node over to the params of the if-statement.
+				ast.params[innermost_if_stmt_index].params.push_back(ast.params[i]);
+
+				// Mark the old node to be deleted.
+				ast.params[i].type = ASTNodeType::Deletable;
+				ast.params[i].value = "del";
+				ast.params[i].params.clear();
+
+				// Remove the endif-node.
+				if (ast.params[i + 1].params.front().type == ASTNodeType::EndifStatement)
+				{
+					ast.params.erase(ast.params.begin() + i + 1);
+					std::cout << "Found endif: " << ast.params[i + 1].params.front().value << '\n';
+					break;
+				}
+			}
+
+			// Clean up nodes that were marked as `deletable`.
+			remove_deletables(ast);
 		}
 
 		return true;

@@ -31,11 +31,14 @@ int main()
 		"A += 4";*/
 	std::string code =
 		"var A = 6;;\n"\
-		"if A == 6:\n"\
-		"if A==3:\n"\
-		"	A+=2\n"\
-		"endif\n"\
-		"	A+=6\n"\
+		"if A == 1:\n"\
+		"	A+=11\n"\
+		"	if A==2:\n"\
+		"		A+=21\n"\
+		"		A+=22\n"\
+		"		A+=23\n"\
+		"	endif\n"
+		"	A+=12\n"\
 		"endif";
 
 	auto tokens = ch8scr::tokenize(code);
