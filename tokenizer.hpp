@@ -15,6 +15,9 @@ namespace c8s
 		Var, 
 		If,
 		Endif,
+		For,
+		To,
+		Endfor,
 		Colon, 
 		Identifier, 
 		Operator, 
@@ -101,6 +104,9 @@ namespace c8s
 				if (tok == "var") tokens.push_back(Token{ TokenType::Var, tok });
 				else if (tok == "if") tokens.push_back(Token{ TokenType::If, tok });
 				else if (tok == "endif") tokens.push_back(Token{ TokenType::Endif, tok });
+				else if (tok == "for") tokens.push_back(Token{ TokenType::For, tok });
+				else if (tok == "to") tokens.push_back(Token{ TokenType::To, tok });
+				else if (tok == "endfor") tokens.push_back(Token{ TokenType::Endfor, tok });
 				else tokens.push_back(Token{ TokenType::Identifier, tok });
 			}
 			else
@@ -109,7 +115,6 @@ namespace c8s
 				tokens.push_back(Token{ TokenType::Error, "Unexpected character: " + std::string{ current_char} });
 				return tokens;
 			}
-				
 		}
 
 		tokens.push_back(Token{ TokenType::EndOfProgram, "end" });

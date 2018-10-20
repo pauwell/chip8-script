@@ -21,6 +21,9 @@ namespace c8s
 		VarExpression,	// X += Y
 		IfStatement,	// if A==B:
 		EndifStatement,	// End marker for if-statement bodies.
+		ForLoop,	// for I=0 to 10:
+		To,			// 0 to 10.		
+		EndforLoop,	// End marker for for-loop bodies.
 		Identifier,	// Name of a (valid) variable.
 		NumberLiteral	// Any number (1,2,3 ...)
 	};
@@ -83,12 +86,20 @@ namespace c8s
 			{
 				return create_node_and_walk(ASTNodeType::IfStatement, tok, cursor, walk);
 			}
+			if (tok.type == TokenType::For)
+			{
+				return create_node_and_walk(ASTNodeType::ForLoop, tok, cursor, walk);
+			}
 		}	
 		else if (parent.type == ASTNodeType::Identifier)
 		{
 			if (tok.type == TokenType::Operator)
 			{
 				return create_node_and_walk(ASTNodeType::Operator, tok, cursor, walk);
+			}
+			if (tok.type == TokenType::To)
+			{
+				return create_node_and_walk(ASTNodeType::To, tok, cursor, walk);
 			}
 		}
 		else if (parent.type == ASTNodeType::Operator)
@@ -124,11 +135,25 @@ namespace c8s
 		{
 			return create_node_and_walk(ASTNodeType::IfStatement, tok, cursor, walk);
 		}
+		else if (parent.type == ASTNodeType::ForLoop)
+		{
+			return create_node_and_walk(ASTNodeType::ForLoop, tok, cursor, walk);
+		}
+		else if (parent.type == ASTNodeType::To)
+		{
+			return create_node_and_walk(ASTNodeType::To, tok, cursor, walk);
+		}
 		
 		if (tok.type == TokenType::Endif)
 		{
 			++cursor;
 			return ASTNode{ ASTNodeType::EndifStatement, tok.value, {} };
+		}
+
+		if (tok.type == TokenType::Endfor)
+		{
+			++cursor;
+			return ASTNode{ ASTNodeType::EndforLoop, tok.value,{} };
 		}
 
 		if (tok.type == TokenType::Numerical)
@@ -147,41 +172,49 @@ namespace c8s
 		return ASTNode{ ASTNodeType::Error, "@no_impl", {} };
 	}
 
-	// Every statement between `if` and `endif` is moved into the `params` 
-	// of the `if`statement. The `endif` statement gets removed.
-	void move_condition_bodies_to_params(ASTNode& ast)
+
+	// The `bodies` of if-statements and for-loops is moved into the `params` of
+	// the parent. The `endif` and `endfor` nodes get removed.
+	void move_bodies_to_params(ASTNode& ast)
 	{
 		for (;;) 
 		{
-			// Find the last/innermost if-statement node that does not yet have more than one parent.
-			unsigned innermost_if_stmt_index = 0;
+			// Find the last/innermost statement node that does not yet have more than one parent.
+			unsigned innermost_stmt_index = 0;
+			ASTNodeType from_type = ASTNodeType::Error;
+			ASTNodeType to_type = ASTNodeType::Error;
 			for (unsigned i = 0; i < ast.params.size(); ++i)
 			{
-				if (ast.params[i].params.front().type == ASTNodeType::IfStatement && ast.params[i].params.size() <= 1)
+				const auto& params = ast.params[i].params;
+				const auto type = params.front().type;
+
+				if ((type == ASTNodeType::IfStatement || type == ASTNodeType::ForLoop) && params.size() <= 1)
 				{
-					innermost_if_stmt_index = i;
+					innermost_stmt_index = i;
+					from_type = type;
+					to_type = (type == ASTNodeType::ForLoop) ? ASTNodeType::EndforLoop : ASTNodeType::EndifStatement;
 				}
 			}
 
-			// Finish the loop if no if-nodes were left to find.
-			if (innermost_if_stmt_index == 0)
+			// Finish the loop if no nodes were left to find.
+			if (from_type == ASTNodeType::Error || to_type == ASTNodeType::Error)
 			{
 				break;
 			}
 
-			// Push the nodes that follow onto the if-statement's `params` until `endif` is reached.
-			for (unsigned i = innermost_if_stmt_index + 1; ast.params[i].params.front().type != ASTNodeType::EndifStatement; ++i) // does `i<params.size()` even make sense!?
+			// Push the nodes that follow onto the statement's `params` until `to_type` is reached.
+			for (unsigned i = innermost_stmt_index + 1; ast.params[i].params.front().type != to_type; ++i)
 			{
-				// Copy the node over to the params of the if-statement.
-				ast.params[innermost_if_stmt_index].params.push_back(ast.params[i]);
+				// Copy the node over to the params of the statement.
+				ast.params[innermost_stmt_index].params.push_back(ast.params[i]);
 
 				// Mark the old node to be deleted.
 				ast.params[i].type = ASTNodeType::Deletable;
 				ast.params[i].value = "del";
 				ast.params[i].params.clear();
 
-				// Remove the endif-node.
-				if (ast.params[i + 1].params.front().type == ASTNodeType::EndifStatement)
+				// Remove the `to_type`-node.
+				if (ast.params[i + 1].params.front().type == to_type)
 				{
 					ast.params.erase(ast.params.begin() + i + 1);
 					std::cout << "Found endif: " << ast.params[i + 1].params.front().value << '\n';
@@ -222,7 +255,7 @@ namespace c8s
 			ast.params.push_back(stmt);
 		}
 
-		move_condition_bodies_to_params(ast);
+		move_bodies_to_params(ast);
 
 		return ast;
 	}
