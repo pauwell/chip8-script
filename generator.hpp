@@ -143,8 +143,29 @@ namespace c8s
 		}
 		else
 			std::cerr << "Invalid statement: " << stmt_node.value << '\n';
-		
+
 		return 0x0;
+	}
+
+	std::vector<u16> walk_statements_and_convert_to_opcode(const ASTNode& root_node, std::vector<std::string>& variables)
+	{
+		std::vector<u16> opcodes;
+
+		for (const auto& node : root_node.params)
+		{
+			// Call this function again recursively, if there are nested statements.
+			if (node.params.front().params.size() > 1)
+			{
+				std::vector<u16> nested_opcodes = walk_statements_and_convert_to_opcode(node, variables);
+				opcodes.insert(opcodes.end(), nested_opcodes.begin(), nested_opcodes.end());
+			}
+			else
+			{
+				opcodes.push_back(ast_node_to_opcode(node, variables));
+			}
+		}
+
+		return opcodes;
 	}
 
 	// Generate chip-8 assembly-code from AST.
@@ -155,14 +176,8 @@ namespace c8s
 		std::vector<u16> opcodes;
 		std::vector<std::string> variables;
 
-		for (const auto& node : program.params)
-		{
-			u16 op = ast_node_to_opcode(node, variables);
-			if (op != 0x0)
-				opcodes.push_back(op);
-			else
-				return opcodes;
-		}
+		// Walk through all the statements and convert them to opcodes.
+		opcodes = walk_statements_and_convert_to_opcode(program, variables);
 
 		return opcodes;
 	}
