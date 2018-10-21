@@ -48,7 +48,7 @@ namespace c8s
 	}
 
 	// Parse the input code into a list of tokens.
-	std::vector<Token> tokenize(std::string input_code)
+	std::vector<Token> split_code_into_tokens(std::string input_code)
 	{
 		// Append newline or semicolon to the end of the code if missing.
 		char last_char_in_code = input_code[input_code.length() - 1];

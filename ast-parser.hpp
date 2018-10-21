@@ -4,7 +4,7 @@
 #include <exception>
 #include <array>
 
-#include "tokenizer.hpp"
+#include "token-parser.hpp"
 
 namespace c8s
 {
@@ -29,8 +29,8 @@ namespace c8s
 	};
 
 	// List of all supported operators.
-	const std::array<std::string, 10> valid_operators = {
-		"=", "==", "!=", "+=", "-=", "<<=", ">>=", "|=", "&=", "^="
+	const std::array<std::string, 11> valid_operators = {
+		":", "=", "==", "!=", "+=", "-=", "<<=", ">>=", "|=", "&=", "^="
 	};
 
 	// A node in the abstract syntax tree.
@@ -133,15 +133,37 @@ namespace c8s
 		}
 		else if (parent.type == ASTNodeType::IfStatement)
 		{
-			return create_node_and_walk(ASTNodeType::IfStatement, tok, cursor, walk);
+			if (tok.type == TokenType::Identifier)
+			{
+				return create_node_and_walk(ASTNodeType::Identifier, tok, cursor, walk);
+			}
+			//return create_node_and_walk(ASTNodeType::IfStatement, tok, cursor, walk);
 		}
 		else if (parent.type == ASTNodeType::ForLoop)
 		{
-			return create_node_and_walk(ASTNodeType::ForLoop, tok, cursor, walk);
+			if (tok.type == TokenType::Identifier)
+			{
+				return create_node_and_walk(ASTNodeType::Identifier, tok, cursor, walk);
+			}
+			//return create_node_and_walk(ASTNodeType::ForLoop, tok, cursor, walk);
+		}
+		else if (parent.type == ASTNodeType::NumberLiteral)
+		{
+			if (tok.type == TokenType::To)
+			{
+				return create_node_and_walk(ASTNodeType::To, tok, cursor, walk);
+			}
+			if (tok.type == TokenType::Colon)
+			{
+				return create_node_and_walk(ASTNodeType::Operator, tok, cursor, walk);
+			}
 		}
 		else if (parent.type == ASTNodeType::To)
 		{
-			return create_node_and_walk(ASTNodeType::To, tok, cursor, walk);
+			if (tok.type == TokenType::Numerical)
+			{
+				return create_node_and_walk(ASTNodeType::NumberLiteral, tok, cursor, walk);
+			}
 		}
 		
 		if (tok.type == TokenType::Endif)
@@ -174,7 +196,7 @@ namespace c8s
 
 
 	// The `bodies` of if-statements and for-loops is moved into the `params` of
-	// the parent. The `endif` and `endfor` nodes get removed.
+	// the parent. 
 	void move_bodies_to_params(ASTNode& ast)
 	{
 		for (;;) 
@@ -216,8 +238,8 @@ namespace c8s
 				// Remove the `to_type`-node.
 				if (ast.params[i + 1].params.front().type == to_type)
 				{
+					ast.params[innermost_stmt_index].params.push_back(ast.params[i + 1]);
 					ast.params.erase(ast.params.begin() + i + 1);
-					std::cout << "Found endif: " << ast.params[i + 1].params.front().value << '\n';
 					break;
 				}
 			}
@@ -228,7 +250,7 @@ namespace c8s
 	}
 
 	// Parse the list of tokens into an AST.
-	ASTNode parse(std::vector<Token> &token_list)
+	ASTNode parse_tokens_to_ast(std::vector<Token> &token_list)
 	{
 		auto cursor = token_list.begin();
 		auto ast = ASTNode{ ASTNodeType::Program, "", {} };
