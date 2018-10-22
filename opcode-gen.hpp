@@ -45,9 +45,11 @@ namespace c8s
 		// 1.5 Remove the element from the `meta_opcodes` vector.
 		// 1.6 Start again by 1.1.
 
-		// Okay by now all labels should be replaced by their respective 
+		// TRY
 
-		// 2. Convert the finished opcodes to u16.
+		// Okay by now all labels should be replaced by their corresponding address.
+
+		// Convert the finished opcodes to u16.
 		std::vector<u16> opcodes{};
 		for (auto& meta : meta_opcodes)
 		{
