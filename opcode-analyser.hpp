@@ -38,11 +38,11 @@ namespace c8s
 		for(auto& op : opcodes)
 		{
 			// Fetch variables.
-			unsigned nnn = op & 0xFFF;		// ----XXXXXXXXXXXX
-			unsigned n = op & 0xF;			// ------------XXXX
-			unsigned x = (op >> 8) & 0xF;	// ----XXXX--------
-			unsigned y = (op >> 4) & 0xF;	// --------XXXX----
-			unsigned kk = op & 0xFF;		// --------XXXXXXXX
+			unsigned nnn = op & 0xFFF;    // ----XXXXXXXXXXXX
+			unsigned n = op & 0xF;        // ------------XXXX
+			unsigned x = (op >> 8) & 0xF; // ----XXXX--------
+			unsigned y = (op >> 4) & 0xF; // --------XXXX----
+			unsigned kk = op & 0xFF;      // --------XXXXXXXX
 			
 			switch(op & 0xF000)
 			{
