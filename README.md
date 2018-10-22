@@ -9,4 +9,4 @@ This project has just started, please feel free to contribute in any way.
 * :fire: The `easy` way to create chip-8 ROMs.
 * :fire: Using variables with meaningful names instead of managing chip-8's registers. 
 * :fire: You can easily predict to which opcodes your code will compile. 
-* :fire: `if-conditions` and `for-loops` do not produce any overhead.
+* :fire: Use labels for jumps instead of line numbers.

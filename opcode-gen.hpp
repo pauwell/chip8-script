@@ -36,6 +36,18 @@ namespace c8s
 	// Creating the finished opcodes using `meta opcodes` produced by the meta generator.
 	std::vector<u16> create_opcodes_from_meta(std::vector<std::string> meta_opcodes)
 	{
+		// 1. Parse all the labels.
+		// 1.1 Search for an element in `meta_opcodes` that contain '<!'.
+		// 1.1.1 If none was found. Continue with 2.
+		// 1.2 Take their respective address (0x200 + (idx*2)?)
+		// 1.3 Search for all elements in `meta_opcodes` that contain '<'.
+		// 1.4 Replace their `<value>` with the address we got from before.
+		// 1.5 Remove the element from the `meta_opcodes` vector.
+		// 1.6 Start again by 1.1.
+
+		// Okay by now all labels should be replaced by their respective 
+
+		// 2. Convert the finished opcodes to u16.
 		std::vector<u16> opcodes{};
 		for (auto& meta : meta_opcodes)
 		{
@@ -43,9 +55,8 @@ namespace c8s
 
 			if (std::find(meta.begin(), meta.end(), '<') != meta.end())
 			{
-				// TODO parse labels
-				u16 op = 0x0;
-				opcodes.push_back(op);
+				std::cerr << "Error! All labels should have been parsed by now\n";
+				opcodes.push_back(0x0);
 			}
 			else
 			{
