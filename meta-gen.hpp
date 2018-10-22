@@ -195,10 +195,30 @@ namespace c8s
 			}
 		}
 
-		// TODO
-		// 5XY0	Cond	if(Vx==Vy)	
-		// 9XY0	Cond	if(Vx!=Vy)
-		
+		if (target_node.type == ASTNodeType::Identifier)
+		{
+			u8 source_v_index = find_var_index(source_node.value, variables);
+			u8 target_v_index = find_var_index(target_node.value, variables);
+
+			if (operator_node.value == "==")
+			{
+				// 5XY0	Cond	if(Vx==Vy)
+				// 1NNN	Flow	goto NNN;
+				return {
+					hex_to_string((u16)((0x5 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x0))),
+					"1<" + std::to_string(label_counter++) + ">"
+				};
+			}
+			if (operator_node.value == "!=")
+			{
+				// 9XY0	Cond	if(Vx!=Vy)
+				// 1NNN	Flow	goto NNN;
+				return {
+					hex_to_string((u16)((0x9 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x0))),
+					"1<" + std::to_string(label_counter++) + ">"
+				};
+			}
+		}
 
 		return { 0x0 };
 	}
