@@ -31,9 +31,33 @@ int main()
 {
 	system("mode 150");
 
+	// FIX If bodies cant be empty and using of undeclared variable produces no warning
+
 	// Running tests.
 	c8s::test_compiler(
-		" {1} Nested if-statements",
+		" {1} Full set of features",
+
+		"VAR a = 4\n"\
+		"VAR b = 2\n"\
+		"IF a == 4:\n"\
+		"IF a != 4:\n"\
+		"	a = 8\n"\
+		"ENDIF\n"\
+		"ENDIF\n"\
+		"IF a == b:\n"\
+		"	IF a != b:\n"\
+		"		a = b\n"\
+		"	ENDIF\n"\
+		"ENDIF\n"\
+		"a = 1\n"\
+		"b = a\n"\
+		"a |= b\n"\
+		"a &= b\n"\
+		"a ^= b\n"\
+		"a -= b"
+	);
+	/*c8s::test_compiler(
+		" {2} Nested if-statements",
 
 		"var A = 6;;\n"\
 		"if A == 1:\n"\
@@ -42,13 +66,13 @@ int main()
 		"		A+=21\n"\
 		"		A+=22\n"\
 		"		A+=23\n"\
-		"	endif\n"
+		"	endif\n"\
 		"	A+=12\n"\
 		"endif"
 	);
 	c8s::test_compiler(
-		" {2} Nested for-loops and if-statements",
-		
+		" {3} Nested for-loops and if-statements",
+
 		"VAR x = 0\n"\
 		"IF x == 0:\n"\
 		"	FOR I = 0 TO 10:\n"\
@@ -57,7 +81,7 @@ int main()
 		"		a += 4\n"\
 		"	ENDFOR\n"\
 		"ENDIF"
-	);
+	);*/
 
 	std::cin.get();
 	return 0;
