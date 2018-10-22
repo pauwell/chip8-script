@@ -25,6 +25,7 @@
 #pragma once
 
 #include "meta-gen.hpp"
+#include "opcode-analyser.hpp"
 
 namespace c8s
 {
@@ -91,5 +92,14 @@ namespace c8s
 		{
 			std::cout << "0x" << op << '\n';
 		}
+	}
+
+	// Debug output opcodes.
+	void print_opcodes(std::vector<u16> opcodes)
+	{
+		print_seperator();
+		std::cout << "4] Creating finished opcodes from `meta`\n";
+		print_seperator();
+		analyse_opcodes(opcodes);
 	}
 }

@@ -25,11 +25,15 @@
 #pragma once
 
 #include "debug-output.hpp"
+#include "opcode-gen.hpp"
 
 namespace c8s
 {
 	void test_compiler(std::string what, std::string code,
-		bool is_print_meta = true, bool is_print_ast = true, bool is_print_tokens = true)
+		bool is_print_meta = true, 
+		bool is_print_ast = true, 
+		bool is_print_tokens = true, 
+		bool is_print_ops = true)
 	{
 		print_seperator(true);
 		std::cout << "Test => " << what << '\n';
@@ -46,6 +50,10 @@ namespace c8s
 		// Generate meta.
 		auto meta_ops = c8s::generate_meta_opcodes(ast);
 		if (is_print_meta) print_meta(meta_ops);
+
+		// Generate opcodes.
+		auto ops = c8s::create_opcodes_from_meta(meta_ops);
+		if (is_print_ops) print_opcodes(ops);
 
 		std::cout << "\n\n";
 	}

@@ -24,5 +24,36 @@
 
 #pragma once
 
-// TODO create finished opcodes from the meta-gen output.
-// TODO Parse labels..
+#include <iostream>
+#include <string>
+#include <vector>
+#include <algorithm>
+
+#include "types.hpp"
+
+namespace c8s
+{
+	// Creating the finished opcodes using `meta opcodes` produced by the meta generator.
+	std::vector<u16> create_opcodes_from_meta(std::vector<std::string> meta_opcodes)
+	{
+		std::vector<u16> opcodes{};
+		for (auto& meta : meta_opcodes)
+		{
+			//	std::cout << "Created opcode " << meta << '\n';
+
+			if (std::find(meta.begin(), meta.end(), '<') != meta.end())
+			{
+				// TODO parse labels
+				u16 op = 0x0;
+				opcodes.push_back(op);
+			}
+			else
+			{
+				u16 op = std::stoul(meta, nullptr, 16);
+				opcodes.push_back(op);
+			}
+		}
+
+		return opcodes;
+	}
+}
