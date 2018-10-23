@@ -27,7 +27,9 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <utility>
 #include <algorithm>
+#include <cstdlib> // _itoa_s
 
 #include "types.hpp"
 
@@ -36,34 +38,72 @@ namespace c8s
 	// Creating the finished opcodes using `meta opcodes` produced by the meta generator.
 	std::vector<u16> create_opcodes_from_meta(std::vector<std::string> meta_opcodes)
 	{
-		// 1. Parse all the labels.
-		// 1.1 Search for an element in `meta_opcodes` that contain '<!'.
-		// 1.1.1 If none was found. Continue with 2.
-		// 1.2 Take their respective address (0x200 + (idx*2)?)
-		// 1.3 Search for all elements in `meta_opcodes` that contain '<'.
-		// 1.4 Replace their `<value>` with the address we got from before.
-		// 1.5 Remove the element from the `meta_opcodes` vector.
-		// 1.6 Start again by 1.1.
+		// Replace labels by their calculated `real` memory-offset.	
+		for (unsigned i = 0; i<meta_opcodes.size(); ++i)
+		{
+			// Find a target-label.
+			if (meta_opcodes[i].find("<!") != std::string::npos)
+			{
+				// Calculate the `real` distance (skipping entries that contain `<!`) from target to start, to get the offset.
+				auto target_real_distance_to_start = std::count_if(meta_opcodes.begin(), meta_opcodes.begin() + i,
+					[](const std::string& str_elem) { return str_elem.find("<!") == std::string::npos; });
 
-		// TRY
+				// Get the value of the label between the `<!` and `!>`.
+				auto target_label_val = meta_opcodes[i].substr(meta_opcodes[i].find("<!") + 2, meta_opcodes[i].find("!>") - 2);
 
-		// Okay by now all labels should be replaced by their corresponding address.
+				// Now only target the labels before that and replace them.
+				for (unsigned j = 0; j<i; ++j)
+				{
+					// Find a source-label that should be replaced.
+					if (meta_opcodes[j].find("<" + target_label_val + ">") != std::string::npos)
+					{
+						// Calculate the `real` offset in memory by adding the starting address 0x200 
+						// for chip-8 ROM's to the `real` distance times the size of each opcode (2 bytes).
+						unsigned real_address_offset = (0x200 + (target_real_distance_to_start * 2));
+
+						// Convert the offset from decimal to hexadecimal.
+						char converted_hex_buffer[50]{ 0 };
+						_itoa_s(real_address_offset, converted_hex_buffer, 16);
+
+						// Overwrite the current meta-opcode with the real opcode.
+						meta_opcodes[j] = meta_opcodes[j].substr(0, meta_opcodes[j].find('<')) + converted_hex_buffer;
+					}
+				}
+			}
+		}
+
+		// Remove `<!..!>`-blocks from `meta_opcodes`.
+		meta_opcodes.erase(std::remove_if(
+			meta_opcodes.begin(),
+			meta_opcodes.end(),
+			[](const std::string& str_elem) {
+			return str_elem.find('!') != std::string::npos;
+		}), meta_opcodes.end());
+
 
 		// Convert the finished opcodes to u16.
 		std::vector<u16> opcodes{};
 		for (auto& meta : meta_opcodes)
 		{
-			//	std::cout << "Created opcode " << meta << '\n';
-
 			if (std::find(meta.begin(), meta.end(), '<') != meta.end())
 			{
 				std::cerr << "Error! All labels should have been parsed by now\n";
 				opcodes.push_back(0x0);
+				continue;
 			}
-			else
+
+			try
 			{
 				u16 op = std::stoul(meta, nullptr, 16);
 				opcodes.push_back(op);
+			}
+			catch (std::invalid_argument ex)
+			{
+				std::cerr << "Error! Failed to convert " << meta << " to hexadecimal in " << ex.what() << '\n';
+			}
+			catch (...)
+			{
+				std::cerr << "Unknown error occurred while trying to convert opcode " << meta << '\n';
 			}
 		}
 
