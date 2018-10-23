@@ -63,8 +63,11 @@ namespace c8s
 
 						// Convert the offset from decimal to hexadecimal.
 						char converted_hex_buffer[50]{ 0 };
+#if defined(_MSC_VER)
 						_itoa_s(real_address_offset, converted_hex_buffer, 16);
-
+#else
+						itoa(real_address_offset, converted_hex_buffer, 16);
+#endif
 						// Overwrite the current meta-opcode with the real opcode.
 						meta_opcodes[j] = meta_opcodes[j].substr(0, meta_opcodes[j].find('<')) + converted_hex_buffer;
 					}
@@ -94,7 +97,7 @@ namespace c8s
 
 			try
 			{
-				u16 op = std::stoul(meta, nullptr, 16);
+				u16 op = 0xFFFF & std::stoul(meta, nullptr, 16);
 				opcodes.push_back(op);
 			}
 			catch (std::invalid_argument ex)
