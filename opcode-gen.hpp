@@ -29,7 +29,7 @@
 #include <vector>
 #include <utility>
 #include <algorithm>
-#include <cstdlib> // _itoa_s
+#include <stdlib.h> // itoa
 
 #include "types.hpp"
 
