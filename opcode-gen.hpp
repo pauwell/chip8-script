@@ -44,22 +44,22 @@ namespace c8s
 			// Find a target-label.
 			if (meta_opcodes[i].find("<!") != std::string::npos)
 			{
-				// Calculate the `real` distance (skipping entries that contain `<!`) from target to start, to get the offset.
-				auto target_real_distance_to_start = std::count_if(meta_opcodes.begin(), meta_opcodes.begin() + i,
+				// Calculate the `real` distance (skipping entries containing `<!`) from target to start.
+				auto real_distance = std::count_if(meta_opcodes.begin(), meta_opcodes.begin() + i,
 					[](const std::string& str_elem) { return str_elem.find("<!") == std::string::npos; });
 
-				// Get the value of the label between the `<!` and `!>`.
-				auto target_label_val = meta_opcodes[i].substr(meta_opcodes[i].find("<!") + 2, meta_opcodes[i].find("!>") - 2);
+				// Get the value of the label between `<!` and `!>`.
+				std::string val = meta_opcodes[i].substr(meta_opcodes[i].find("<!") + 2, meta_opcodes[i].find("!>") - 2);
 
 				// Now only target the labels before that and replace them.
 				for (unsigned j = 0; j<i; ++j)
 				{
 					// Find a source-label that should be replaced.
-					if (meta_opcodes[j].find("<" + target_label_val + ">") != std::string::npos)
+					if (meta_opcodes[j].find("<" + val + ">") != std::string::npos)
 					{
 						// Calculate the `real` offset in memory by adding the starting address 0x200 
 						// for chip-8 ROM's to the `real` distance times the size of each opcode (2 bytes).
-						unsigned real_address_offset = (0x200 + (target_real_distance_to_start * 2));
+						unsigned real_address_offset = (0x200 + (real_distance * 2));
 
 						// Convert the offset from decimal to hexadecimal.
 						char converted_hex_buffer[50]{ 0 };
@@ -99,7 +99,7 @@ namespace c8s
 			}
 			catch (std::invalid_argument ex)
 			{
-				std::cerr << "Error! Failed to convert " << meta << " to hexadecimal in " << ex.what() << '\n';
+				std::cerr << "Can not convert " << meta << " to hexadecimal in " << ex.what() << '\n';
 			}
 			catch (...)
 			{
