@@ -27,17 +27,10 @@
 #include <sstream>
 
 #include "ast-parser.hpp"
-#include "types.hpp"
+#include "conversion.hpp"
 
 namespace c8s
 {
-	std::string hex_to_string(u16 hex_input)
-	{
-		std::stringstream ss;
-		ss << std::hex << hex_input;
-		return ss.str();
-	}
-
 	unsigned find_var_index(std::string name, std::vector<std::string>& variables)
 	{
 		auto found_at = std::find(variables.begin(), variables.end(), name);

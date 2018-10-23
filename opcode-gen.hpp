@@ -31,7 +31,7 @@
 #include <algorithm>
 #include <stdlib.h> // itoa
 
-#include "types.hpp"
+#include "conversion.hpp"
 
 namespace c8s
 {
@@ -61,13 +61,9 @@ namespace c8s
 						// for chip-8 ROM's to the `real` distance times the size of each opcode (2 bytes).
 						unsigned real_address_offset = (0x200 + (real_distance * 2));
 
-						// Convert the offset from decimal to hexadecimal.
-						char converted_hex_buffer[50]{ 0 };
-#if defined(_MSC_VER)
-						_itoa_s(real_address_offset, converted_hex_buffer, 16);
-#else
-						itoa(real_address_offset, converted_hex_buffer, 16);
-#endif
+						// Convert the offset from decimal to a hexadecimal string.
+						std::string converted_hex_buffer = hex_to_string(real_address_offset);
+
 						// Overwrite the current meta-opcode with the real opcode.
 						meta_opcodes[j] = meta_opcodes[j].substr(0, meta_opcodes[j].find('<')) + converted_hex_buffer;
 					}
