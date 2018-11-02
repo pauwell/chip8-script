@@ -27,6 +27,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <fstream>
 #include <utility>
 #include <algorithm>
 #include <stdlib.h> // itoa
@@ -38,6 +39,10 @@ namespace c8s
 	// Creating the finished opcodes using `meta opcodes` produced by the meta generator.
 	std::vector<u16> create_opcodes_from_meta(std::vector<std::string> meta_opcodes)
 	{
+		// Remove last (zero) opcode.
+		if (meta_opcodes.back() == "0")
+			meta_opcodes.pop_back();
+
 		// Replace labels by their calculated `real` memory-offset.	
 		for (unsigned i = 0; i<meta_opcodes.size(); ++i)
 		{
@@ -107,5 +112,16 @@ namespace c8s
 		}
 
 		return opcodes;
+	}
+
+	// Write the finished opcodes to a ROM file.
+	void write_opcodes_to_file(std::vector<u16> opcodes, std::string file_path)
+	{
+		std::ofstream ofs{ "OUT_ROM", std::ios::binary };
+		for (const auto& op : opcodes)
+		{
+			u16 rev = (op & 0xFF) << 8 | (op) >> 8;
+			ofs.write((char*)&rev, sizeof(u16));
+		}
 	}
 }

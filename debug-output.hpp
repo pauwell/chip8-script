@@ -86,8 +86,9 @@ namespace c8s
 		print_seperator();
 		std::cout << "3] Creating `meta-opcodes` from the AST\n";
 		print_seperator();
-		std::cout << "(This is the last step before the finished opcodes. Now we only have to ";
-		std::cout << "resolve the labels `<1>,<2>..` to their line-number at `<!1!>,<!2!>..`)\n";
+		std::cout << "(This is the last step before the finished opcodes.\n";
+		std::cout << "Now we only have to resolve the labels `<1>,<2>..`\n"; 
+		std::cout << "to their line - number at `<!1!> , <!2!>..`)\n";
 		for (auto op : meta_ops)
 		{
 			std::cout << "0x" << op << '\n';

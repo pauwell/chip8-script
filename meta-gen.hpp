@@ -246,7 +246,7 @@ namespace c8s
 		}
 		else if (stmt_node.type == ASTNodeType::EndOfProgram)
 		{
-			return { "0x0" };
+			return { "0" };
 		}
 		else
 			std::cerr << "Invalid statement: " << stmt_node.value << '\n';
