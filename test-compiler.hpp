@@ -55,6 +55,8 @@ namespace c8s
 		auto ops = c8s::create_opcodes_from_meta(meta_ops);
 		if (is_print_ops) print_opcodes(ops);
 
-		std::cout << "\n\n";
+		// Output opcodes to ROM file.
+		c8s::write_opcodes_to_file(ops, "OUT_ROM");
+		std::cout << "\n\nOpcodes written to `OUT_ROM`..\nDone!\n\n";
 	}
 }
