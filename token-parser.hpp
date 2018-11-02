@@ -42,6 +42,7 @@ namespace c8s
 		Endif,
 		For,
 		To,
+		Step,
 		Endfor,
 		Colon, 
 		Identifier, 
@@ -131,6 +132,7 @@ namespace c8s
 				else if (tok == "endif") tokens.push_back(Token{ TokenType::Endif, tok });
 				else if (tok == "for") tokens.push_back(Token{ TokenType::For, tok });
 				else if (tok == "to") tokens.push_back(Token{ TokenType::To, tok });
+				else if (tok == "step") tokens.push_back(Token{ TokenType::Step, tok });
 				else if (tok == "endfor") tokens.push_back(Token{ TokenType::Endfor, tok });
 				else tokens.push_back(Token{ TokenType::Identifier, tok });
 			}

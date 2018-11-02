@@ -48,6 +48,7 @@ namespace c8s
 		EndifStatement,	// End marker for if-statement bodies.
 		ForLoop,	// for I=0 to 10:
 		To,		// 0 to 10.		
+		Step,	// 0 to 10 step 1
 		EndforLoop,	// End marker for for-loop bodies.
 		Identifier,	// Name of a (valid) variable.
 		NumberLiteral	// Any number (1,2,3 ...)
@@ -178,12 +179,23 @@ namespace c8s
 			{
 				return create_node_and_walk(ASTNodeType::To, tok, cursor, walk);
 			}
+			if (tok.type == TokenType::Step)
+			{
+				return create_node_and_walk(ASTNodeType::Step, tok, cursor, walk);
+			}
 			if (tok.type == TokenType::Colon)
 			{
 				return create_node_and_walk(ASTNodeType::Operator, tok, cursor, walk);
 			}
 		}
 		else if (parent.type == ASTNodeType::To)
+		{
+			if (tok.type == TokenType::Numerical)
+			{
+				return create_node_and_walk(ASTNodeType::NumberLiteral, tok, cursor, walk);
+			}
+		}
+		else if (parent.type == ASTNodeType::Step)
 		{
 			if (tok.type == TokenType::Numerical)
 			{

@@ -231,6 +231,27 @@ namespace c8s
 		{
 			return open_if_statement_to_meta(node, variables, label_counter);
 		}
+		if (node.type == ASTNodeType::ForLoop)
+		{
+			// TODO
+			/*	
+				FOR i=5 TO 10 STEP 2
+
+				1] Create variable `i`
+				2] 6[i]05 // Set v[i] = NN(05)		// Set index-counter
+				3] 6[ito]0A // Set v[ito] = NN(10)	// Save to-value 
+				x] 6[istep]02 // Set v[istep] = NN(2) 	// Save step-value
+				4] Loopstart-label:
+
+					[ loop-body ]
+
+				7] 8[i][istep]0 
+				8] 5[i][ito]0 	// If i == iend skip jmp instruction and finish loop 
+				9] Jmp to loopstart-label
+				10] Done..
+			*/
+			//return open_for_loop_to_meta(node, varia)
+		}
 
 		if (stmt_node.type == ASTNodeType::VarDeclaration)
 		{
