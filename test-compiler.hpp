@@ -29,7 +29,7 @@
 
 namespace c8s
 {
-	void test_compiler(std::string what, std::string code,
+	std::vector<u16> test_compiler(std::string what, std::string code,
 		bool is_print_meta = true, 
 		bool is_print_ast = true, 
 		bool is_print_tokens = true, 
@@ -55,8 +55,64 @@ namespace c8s
 		auto ops = c8s::create_opcodes_from_meta(meta_ops);
 		if (is_print_ops) print_opcodes(ops);
 
+		return ops;
+	}
+
+	// Run all tests.
+	bool run_tests()
+	{
+		auto test_output = test_compiler(
+			" {1} Full set of features",
+
+			"VAR a = 4\n"\
+			"VAR b = 2\n"\
+			"IF a == 4:\n"\
+			"IF a != 4:\n"\
+			"	a = 8\n"\
+			"ENDIF\n"\
+			"ENDIF\n"\
+			"IF a == b:\n"\
+			"	IF a != b:\n"\
+			"		a = b\n"\
+			"	ENDIF\n"\
+			"ENDIF\n"\
+			"a = 1\n"\
+			"b = a\n"\
+			"a |= b\n"\
+			"a &= b\n"\
+			"a ^= b\n"\
+			"a -= b"
+		);
+
+		if (   test_output[0] != 0x6004
+			|| test_output[1] != 0x6102
+			|| test_output[2] != 0x3004
+			|| test_output[3] != 0x120E
+			|| test_output[4] != 0x4004
+			|| test_output[5] != 0x120E
+			|| test_output[6] != 0x6008
+			|| test_output[7] != 0x5010
+			|| test_output[8] != 0x1218
+			|| test_output[9] != 0x9010
+			|| test_output[10]!= 0x1218
+			|| test_output[11]!= 0x8010
+			|| test_output[12]!= 0x6001
+			|| test_output[13]!= 0x8100
+			|| test_output[14]!= 0x8011
+			|| test_output[15]!= 0x8012
+			|| test_output[16]!= 0x8013
+			|| test_output[17]!= 0x8015
+		){
+			std::cout << "\n\nTest failed!\n";
+			return false;
+		}
+			
+		std::cout << "\n\nTest passed!\n";
+
 		// Output opcodes to ROM file.
-		c8s::write_opcodes_to_file(ops, "OUT_ROM");
+		c8s::write_opcodes_to_file(test_output, "OUT_ROM");
 		std::cout << "\n\nOpcodes written to `OUT_ROM`..\nDone!\n\n";
+
+		return true;
 	}
 }
