@@ -221,7 +221,7 @@ namespace c8s
 		return { "<!" + std::to_string(--label_counter) + "!>" };
 	}
 
-	std::vector<std::string> open_for_loop_to_meta(const ASTNode& stmt_node, std::vector<std::string>& variables)
+	std::vector<std::string> open_for_loop_to_meta(const ASTNode& stmt_node, std::vector<std::string>& variables, unsigned label_counter)
 	{
 		// TODO
 		/*
@@ -233,15 +233,30 @@ namespace c8s
 			4] 6[istep]02 // Set v[istep] = NN(2) 	// Save step-value
 			5] Loopstart-label:
 		*/
-		//
+		
+		// Fetch nodes.
 		ASTNode var_node = stmt_node.params.front();
 		ASTNode to_node = var_node.params.front().params.front().params.front();
-		
-		std::string index_var_decl_op = var_decl_to_meta(var_node, variables); // 1.1
-		
-		// TODO Set ito and istep variables..
+		ASTNode step_node = to_node.params.front().params.front();
 
-		return {};
+		// These are dummy ASTNodes to use the `var_decl_to_meta`-function to 
+		// create the additional variables neccessary for the loop.
+		ASTNode ito_dummy{ ASTNodeType::VarDeclaration, var_node.value + "to", {
+			ASTNode{ ASTNodeType::Operator, "=", { to_node.params.front() } } } };
+		ASTNode istep_dummy{ ASTNodeType::VarDeclaration, var_node.value + "step",{
+			ASTNode{ ASTNodeType::Operator, "=",{ step_node.params.front() } } } };
+
+		// Create variables necessary for the loop.
+		std::string index_var_decl_op = var_decl_to_meta(var_node, variables); // 2
+		std::string ito_var_decl_op = var_decl_to_meta(ito_dummy, variables); // 3
+		std::string istep_var_decl_op = var_decl_to_meta(istep_dummy, variables); // 4
+
+		return {
+			var_decl_to_meta(var_node, variables),
+			var_decl_to_meta(ito_dummy, variables),
+			var_decl_to_meta(istep_dummy, variables),
+			"<#" + std::to_string(label_counter++) + "#>"
+		};
 	}
 
 	std::vector<std::string> close_for_loop_to_meta()
@@ -256,7 +271,7 @@ namespace c8s
 		return {};
 	}
 
-	std::vector<std::string> ast_node_to_meta(const ASTNode& node, std::vector<std::string>& variables, unsigned& label_counter)
+	std::vector<std::string> ast_node_to_meta(const ASTNode& node, std::vector<std::string>& variables, unsigned& if_label_counter, unsigned& for_label_counter)
 	{
 		if (node.params.size() > 1)
 			std::cerr << "Warning! Multiple statements in one.\n";
@@ -264,7 +279,7 @@ namespace c8s
 
 		if (node.type == ASTNodeType::IfStatement)
 		{
-			return open_if_statement_to_meta(node, variables, label_counter);
+			return open_if_statement_to_meta(node, variables, if_label_counter);
 		}
 		if (node.type == ASTNodeType::ForLoop)
 		{
@@ -285,7 +300,7 @@ namespace c8s
 				8] Jmp to loopstart-label
 				9] Done..
 			*/
-			return open_for_loop_to_meta(node, variables);
+			return open_for_loop_to_meta(node, variables, for_label_counter);
 		}
 
 		if (stmt_node.type == ASTNodeType::VarDeclaration)
@@ -298,7 +313,7 @@ namespace c8s
 		}
 		else if (stmt_node.type == ASTNodeType::EndifStatement)
 		{
-			return { close_if_statement_to_meta(label_counter) };
+			return { close_if_statement_to_meta(if_label_counter) };
 		}
 		else if (stmt_node.type == ASTNodeType::EndOfProgram)
 		{
@@ -310,7 +325,7 @@ namespace c8s
 		return { "0x0" };
 	}
 
-	std::vector<std::string> walk_statements_and_convert_to_meta(const ASTNode& root_node, std::vector<std::string>& variables, unsigned& label_counter)
+	std::vector<std::string> walk_statements_and_convert_to_meta(const ASTNode& root_node, std::vector<std::string>& variables, unsigned& if_label_counter, unsigned& for_label_counter)
 	{
 		std::vector<std::string> meta_opcodes;
 
@@ -319,12 +334,12 @@ namespace c8s
 			// Call this function again recursively, if there are nested statements.
 			if (node.params.size() > 1)
 			{
-				std::vector<std::string> nested_opcodes = walk_statements_and_convert_to_meta(node, variables, label_counter);
+				std::vector<std::string> nested_opcodes = walk_statements_and_convert_to_meta(node, variables, if_label_counter, for_label_counter);
 				meta_opcodes.insert(meta_opcodes.end(), nested_opcodes.begin(), nested_opcodes.end());
 			}
 			else
 			{
-				std::vector<std::string> new_opcodes = ast_node_to_meta(node, variables, label_counter);
+				std::vector<std::string> new_opcodes = ast_node_to_meta(node, variables, if_label_counter, for_label_counter);
 				meta_opcodes.insert(meta_opcodes.end(), new_opcodes.begin(), new_opcodes.end());
 			}
 		}
@@ -337,10 +352,12 @@ namespace c8s
 	{
 		std::vector<std::string> meta_opcodes;
 		std::vector<std::string> variables;
-		unsigned label_counter = 1; // Is used for pulling unique numbers for jumping blocks.
+		// Is used for pulling unique numbers for jumping blocks.
+		unsigned label_counter_if = 1;
+		unsigned label_counter_for = 1;
 
 		// Walk through all the statements and convert them to opcodes.
-		meta_opcodes = walk_statements_and_convert_to_meta(program, variables, label_counter);
+		meta_opcodes = walk_statements_and_convert_to_meta(program, variables, label_counter_if, label_counter_for);
 
 		return meta_opcodes;
 	}
