@@ -64,7 +64,7 @@ namespace c8s
 		auto for_test_output = test_compiler(
 			"Test for-loop",
 			"VAR a = 1\n"\
-			"FOR i=0 TO 10 STEP 1:\n"\
+			"FOR i=5 TO 10 STEP 2:\n"\
 			"	a += 1\n"\
 			"ENDFOR\n"\
 			"VAR a=10;"

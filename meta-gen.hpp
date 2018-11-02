@@ -221,6 +221,41 @@ namespace c8s
 		return { "<!" + std::to_string(--label_counter) + "!>" };
 	}
 
+	std::vector<std::string> open_for_loop_to_meta(const ASTNode& stmt_node, std::vector<std::string>& variables)
+	{
+		// TODO
+		/*
+			1.1] Create variable `i`
+			1.2] Create variable `ito`
+			1.3] Create variable `istep`
+			2] 6[i]05 // Set v[i] = NN(05)		// Set index-counter
+			3] 6[ito]0A // Set v[ito] = NN(10)	// Save to-value 
+			4] 6[istep]02 // Set v[istep] = NN(2) 	// Save step-value
+			5] Loopstart-label:
+		*/
+		//
+		ASTNode var_node = stmt_node.params.front();
+		ASTNode to_node = var_node.params.front().params.front().params.front();
+		
+		std::string index_var_decl_op = var_decl_to_meta(var_node, variables); // 1.1
+		
+		// TODO Set ito and istep variables..
+
+		return {};
+	}
+
+	std::vector<std::string> close_for_loop_to_meta()
+	{
+		// TODO
+		/*
+			6] 8[i][istep]0 
+			7] 5[i][ito]0 	// If i == iend skip jmp instruction and finish loop 
+			8] Jmp to loopstart-label
+			9] Done..
+		*/
+		return {};
+	}
+
 	std::vector<std::string> ast_node_to_meta(const ASTNode& node, std::vector<std::string>& variables, unsigned& label_counter)
 	{
 		if (node.params.size() > 1)
@@ -240,17 +275,17 @@ namespace c8s
 				1] Create variable `i`
 				2] 6[i]05 // Set v[i] = NN(05)		// Set index-counter
 				3] 6[ito]0A // Set v[ito] = NN(10)	// Save to-value 
-				x] 6[istep]02 // Set v[istep] = NN(2) 	// Save step-value
-				4] Loopstart-label:
+				4] 6[istep]02 // Set v[istep] = NN(2) 	// Save step-value
+				5] Loopstart-label:
 
 					[ loop-body ]
 
-				7] 8[i][istep]0 
-				8] 5[i][ito]0 	// If i == iend skip jmp instruction and finish loop 
-				9] Jmp to loopstart-label
-				10] Done..
+				6] 8[i][istep]0 
+				7] 5[i][ito]0 	// If i == iend skip jmp instruction and finish loop 
+				8] Jmp to loopstart-label
+				9] Done..
 			*/
-			//return open_for_loop_to_meta(node, varia)
+			return open_for_loop_to_meta(node, variables);
 		}
 
 		if (stmt_node.type == ASTNodeType::VarDeclaration)
