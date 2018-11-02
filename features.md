@@ -10,12 +10,12 @@ Under construction :construction:
 | <ul><li>- [ ] </li></ul> | 00EE | Flow | return; | *todo* |	
 | <ul><li>- [ ] </li></ul> | 1NNN | Flow | goto NNN; | *todo* |	
 | <ul><li>- [ ] </li></ul> | 2NNN | Flow | *(0xNNN)() | *todo* |	
-| <ul><li>- [ ] </li></ul> | 3XNN | Cond | if(Vx==NN) | *todo* |	
-| <ul><li>- [ ] </li></ul> | 4XNN | Cond | if(Vx!=NN) | *todo* |	
-| <ul><li>- [ ] </li></ul> | 5XY0 | Cond | if(Vx==Vy) | *todo* |	
-| <ul><li>- [x] </li></ul> | 6XNN | Const | Vx = NN | <code>var x = 0</code>, <code>x = 10</code> |	
+| <ul><li>- [x] </li></ul> | 3XNN | Cond | if(Vx==NN) | <code>IF x==1: [..] ENDIF</code> |	
+| <ul><li>- [x] </li></ul> | 4XNN | Cond | if(Vx!=NN) | <code>IF x!=1: [..] ENDIF</code> |	
+| <ul><li>- [x] </li></ul> | 5XY0 | Cond | if(Vx==Vy) | <code>IF x==y: [..] ENDIF</code> |	
+| <ul><li>- [x] </li></ul> | 6XNN | Const | Vx = NN | <code>VAR x = 0</code>, <code>x = 10</code> |	
 | <ul><li>- [x] </li></ul> | 7XNN | Const | Vx += NN | <code>a += 8</code> |	
-| <ul><li>- [x] </li></ul> | 8XY0 | Assig | Vx=Vy | <code>var a = b</code>, <code>a = b</code> |
+| <ul><li>- [x] </li></ul> | 8XY0 | Assig | Vx=Vy | <code>VAR a = b</code>, <code>a = b</code> |
 | <ul><li>- [x] </li></ul> | 8XY1 | BitOp | Vx=Vx\|Vy | <code>a \|= b</code> |	
 | <ul><li>- [x] </li></ul> | 8XY2 | BitOp | Vx=Vx&Vy | <code>a &= b</code> |	
 | <ul><li>- [x] </li></ul> | 8XY3 | BitOp | Vx=Vx^Vy | <code>a ^= b</code> |	
