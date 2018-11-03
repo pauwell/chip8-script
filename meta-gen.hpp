@@ -152,7 +152,7 @@ namespace c8s
 		return "0x0";
 	}
 
-	std::vector<std::string> open_if_statement_to_meta(const ASTNode& stmt_node, std::vector<std::string>& variables, unsigned& label_counter)
+	std::vector<std::string> open_if_statement_to_meta(const ASTNode& stmt_node, std::vector<std::string>& variables, unsigned& if_label_counter)
 	{
 		ASTNode source_node = stmt_node.params.front();
 		ASTNode operator_node = source_node.params.front();
@@ -174,7 +174,7 @@ namespace c8s
 				// 1NNN	Flow	goto NNN;
 				return { 
 					hex_to_string((u16)((0x3 << 12) | (v_index << 8) | (value_u8 & 0xFF))),
-					"1<" + std::to_string(label_counter++) + ">"
+					"1<" + std::to_string(if_label_counter++) + ">"
 				};
 			}
 			if (operator_node.value == "!=")
@@ -183,7 +183,7 @@ namespace c8s
 				// 1NNN	Flow	goto NNN;
 				return { 
 					hex_to_string((u16)((0x4 << 12) | (v_index << 8) | (value_u8 & 0xFF))),
-					"1<" + std::to_string(label_counter++) + ">"
+					"1<" + std::to_string(if_label_counter++) + ">"
 				};
 			}
 		}
@@ -199,7 +199,7 @@ namespace c8s
 				// 1NNN	Flow	goto NNN;
 				return {
 					hex_to_string((u16)((0x5 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x0))),
-					"1<" + std::to_string(label_counter++) + ">"
+					"1<" + std::to_string(if_label_counter++) + ">"
 				};
 			}
 			if (operator_node.value == "!=")
@@ -208,7 +208,7 @@ namespace c8s
 				// 1NNN	Flow	goto NNN;
 				return {
 					hex_to_string((u16)((0x9 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x0))),
-					"1<" + std::to_string(label_counter++) + ">"
+					"1<" + std::to_string(if_label_counter++) + ">"
 				};
 			}
 		}
@@ -216,12 +216,12 @@ namespace c8s
 		return { 0x0 };
 	}
 
-	std::vector<std::string> close_if_statement_to_meta(unsigned& label_counter)
+	std::vector<std::string> close_if_statement_to_meta(unsigned& if_label_counter)
 	{
-		return { "<!" + std::to_string(--label_counter) + "!>" };
+		return { "<!" + std::to_string(--if_label_counter) + "!>" };
 	}
 
-	std::vector<std::string> open_for_loop_to_meta(const ASTNode& stmt_node, std::vector<std::string>& variables, unsigned label_counter)
+	std::vector<std::string> open_for_loop_to_meta(const ASTNode& stmt_node, std::vector<std::string>& variables, unsigned& for_label_counter)
 	{
 		// TODO
 		/*
@@ -246,29 +246,42 @@ namespace c8s
 		ASTNode istep_dummy{ ASTNodeType::VarDeclaration, var_node.value + "step",{
 			ASTNode{ ASTNodeType::Operator, "=",{ step_node.params.front() } } } };
 
-		// Create variables necessary for the loop.
-		std::string index_var_decl_op = var_decl_to_meta(var_node, variables); // 2
-		std::string ito_var_decl_op = var_decl_to_meta(ito_dummy, variables); // 3
-		std::string istep_var_decl_op = var_decl_to_meta(istep_dummy, variables); // 4
-
 		return {
 			var_decl_to_meta(var_node, variables),
 			var_decl_to_meta(ito_dummy, variables),
 			var_decl_to_meta(istep_dummy, variables),
-			"<#" + std::to_string(label_counter++) + "#>"
+			"<!" + std::to_string(for_label_counter++) + "!>"
 		};
 	}
 
-	std::vector<std::string> close_for_loop_to_meta()
+	std::vector<std::string> close_for_loop_to_meta(std::vector<std::string>& variables, unsigned& for_label_counter)
 	{
 		// TODO
 		/*
-			6] 8[i][istep]0 
+			6] 8[i][istep]4 
 			7] 5[i][ito]0 	// If i == iend skip jmp instruction and finish loop 
 			8] Jmp to loopstart-label
 			9] Done..
 		*/
-		return {};
+
+		// TODO use STL for this naive loop:
+
+		// The last `x, xto, xstep` triplet in the variables stack must be the corresponding one.
+		unsigned var_idx = 0;
+		for (unsigned i = variables.size() - 1; i > 1; --i)
+			if (variables[i].find("step") != std::string::npos && variables[i - 1].find("to") != std::string::npos)
+			{
+				var_idx = i - 2;
+				break;
+			}
+		
+		std::vector<std::string> endfor_ops{
+			hex_to_string((u16)((0x8 << 12) | (var_idx << 8) | ((var_idx + 2) << 4) | (0x4))), /* 8[i][istep]4 - Vx += Vy  */
+			hex_to_string((u16)((0x5 << 12) | (var_idx << 8) | ((var_idx + 1) << 4) | (0x4))), /* 5[i][ito]0 - if(Vx==Vy) */
+			"1<" + std::to_string(--for_label_counter) + ">"	/* Jmp to loop-start. */
+		};
+
+		return endfor_ops;
 	}
 
 	std::vector<std::string> ast_node_to_meta(const ASTNode& node, std::vector<std::string>& variables, unsigned& if_label_counter, unsigned& for_label_counter)
@@ -281,47 +294,32 @@ namespace c8s
 		{
 			return open_if_statement_to_meta(node, variables, if_label_counter);
 		}
+		if (stmt_node.type == ASTNodeType::EndifStatement)
+		{
+			return { close_if_statement_to_meta(if_label_counter) };
+		}
 		if (node.type == ASTNodeType::ForLoop)
 		{
-			// TODO
-			/*	
-				FOR i=5 TO 10 STEP 2
-
-				1] Create variable `i`
-				2] 6[i]05 // Set v[i] = NN(05)		// Set index-counter
-				3] 6[ito]0A // Set v[ito] = NN(10)	// Save to-value 
-				4] 6[istep]02 // Set v[istep] = NN(2) 	// Save step-value
-				5] Loopstart-label:
-
-					[ loop-body ]
-
-				6] 8[i][istep]0 
-				7] 5[i][ito]0 	// If i == iend skip jmp instruction and finish loop 
-				8] Jmp to loopstart-label
-				9] Done..
-			*/
 			return open_for_loop_to_meta(node, variables, for_label_counter);
 		}
-
+		if (stmt_node.type == ASTNodeType::EndforLoop)
+		{
+			return close_for_loop_to_meta(variables, for_label_counter);
+		}
 		if (stmt_node.type == ASTNodeType::VarDeclaration)
 		{
 			return { var_decl_to_meta(stmt_node, variables) };
 		}
-		else if (stmt_node.type == ASTNodeType::VarExpression)
+		if (stmt_node.type == ASTNodeType::VarExpression)
 		{
 			return { var_expr_to_meta(stmt_node, variables) };
 		}
-		else if (stmt_node.type == ASTNodeType::EndifStatement)
-		{
-			return { close_if_statement_to_meta(if_label_counter) };
-		}
-		else if (stmt_node.type == ASTNodeType::EndOfProgram)
+		if (stmt_node.type == ASTNodeType::EndOfProgram)
 		{
 			return { "0" };
 		}
-		else
-			std::cerr << "Invalid statement: " << stmt_node.value << '\n';
-
+		
+		std::cerr << "Invalid statement: " << stmt_node.value << '\n';
 		return { "0x0" };
 	}
 
@@ -352,9 +350,10 @@ namespace c8s
 	{
 		std::vector<std::string> meta_opcodes;
 		std::vector<std::string> variables;
+
 		// Is used for pulling unique numbers for jumping blocks.
 		unsigned label_counter_if = 1;
-		unsigned label_counter_for = 1;
+		unsigned label_counter_for = 500; // The if-label counter should never reach this value.
 
 		// Walk through all the statements and convert them to opcodes.
 		meta_opcodes = walk_statements_and_convert_to_meta(program, variables, label_counter_if, label_counter_for);
