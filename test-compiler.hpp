@@ -61,18 +61,18 @@ namespace c8s
 	// Run all tests.
 	bool run_tests()
 	{
-		auto for_test_output = test_compiler(
-			"Test for-loop",
+		auto for_test_output = test_compiler("Test for-loop",
 			"VAR a = 1\n"\
-			"FOR i=5 TO 10 STEP 2:\n"\
+			"FOR i=4 TO 10 STEP 2:\n"\
+			"	IF a==1:\n"\
+			"		a+=2\n"\
+			"	ENDIF\n"\
 			"	a += 1\n"\
 			"ENDFOR\n"\
-			"VAR a=10;"
+			"VAR z=10;"
 		);
 
-		auto test_output = test_compiler(
-			"Full set of features",
-
+		auto test_output = test_compiler("Test full set of features",
 			"VAR a = 4\n"\
 			"VAR b = 2\n"\
 			"IF a == 4:\n"\
