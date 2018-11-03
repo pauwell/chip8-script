@@ -72,6 +72,27 @@ namespace c8s
 			"VAR z=10;"
 		);
 
+		if (   for_test_output[0] != 0x6001
+			|| for_test_output[1] != 0x6104
+			|| for_test_output[2] != 0x620A
+			|| for_test_output[3] != 0x6302
+			|| for_test_output[4] != 0x3001
+			|| for_test_output[5] != 0x120E
+			|| for_test_output[6] != 0x7002
+			|| for_test_output[7] != 0x7001
+			|| for_test_output[8] != 0x8134
+			|| for_test_output[9] != 0x5124
+			|| for_test_output[10]!= 0x1208
+			|| for_test_output[11]!= 0x640A
+			) {
+			std::cout << "\n\nTest failed!\n";
+			return false;
+		}
+
+		// Output opcodes to ROM file.
+		c8s::write_opcodes_to_file(for_test_output, "OUT_ROM");
+		std::cout << "\n\nOpcodes written to `OUT_ROM`..\nDone!\n\n";
+
 		auto test_output = test_compiler("Test full set of features",
 			"VAR a = 4\n"\
 			"VAR b = 2\n"\
@@ -116,11 +137,7 @@ namespace c8s
 			return false;
 		}
 			
-		std::cout << "\n\nTest passed!\n";
-
-		// Output opcodes to ROM file.
-		c8s::write_opcodes_to_file(test_output, "OUT_ROM");
-		std::cout << "\n\nOpcodes written to `OUT_ROM`..\nDone!\n\n";
+		std::cout << "\n\nAll tests passed!\n";
 
 		return true;
 	}
