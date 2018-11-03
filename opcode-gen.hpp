@@ -56,8 +56,16 @@ namespace c8s
 				// Get the value of the label between `<!` and `!>`.
 				std::string val = meta_opcodes[i].substr(meta_opcodes[i].find("<!") + 2, meta_opcodes[i].find("!>") - 2);
 
+
+				// If the value is smaller than 500 we know it is an if-label. 
+				bool is_if_label = (atoi(val.c_str()) < 500);
+
+				// Change start for search based on if its a if- or for-label.
+				unsigned from = is_if_label ? 0 : i;
+				unsigned to = is_if_label ? i : meta_opcodes.size();
+
 				// Now only target the labels before that and replace them.
-				for (unsigned j = 0; j<i; ++j)
+				for (unsigned j = from; j<to; ++j)
 				{
 					// Find a source-label that should be replaced.
 					if (meta_opcodes[j].find("<" + val + ">") != std::string::npos)
@@ -71,6 +79,7 @@ namespace c8s
 
 						// Overwrite the current meta-opcode with the real opcode.
 						meta_opcodes[j] = meta_opcodes[j].substr(0, meta_opcodes[j].find('<')) + converted_hex_buffer;
+						break;
 					}
 				}
 			}
