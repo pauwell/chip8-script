@@ -30,9 +30,9 @@
 namespace c8s
 {
 	std::vector<u16> test_compiler(std::string what, std::string code,
-		bool is_print_meta = true, 
-		bool is_print_ast = true, 
-		bool is_print_tokens = true, 
+		bool is_print_meta = true,
+		bool is_print_ast = true,
+		bool is_print_tokens = true,
 		bool is_print_ops = true)
 	{
 		print_seperator(true);
@@ -61,6 +61,13 @@ namespace c8s
 	// Run all tests.
 	bool run_tests()
 	{
+		auto empty_if = test_compiler("Empty if statement",
+			"b = 20\n"\
+			"VAR a = 10\n"\
+			"IF a == 10:\n"\
+			"ENDIF;"\
+		);
+
 		auto for_test_output = test_compiler("Test for-loop",
 			"VAR a = 1\n"\
 			"FOR i=4 TO 10 STEP 2:\n"\

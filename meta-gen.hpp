@@ -34,6 +34,8 @@ namespace c8s
 	unsigned find_var_index(std::string name, std::vector<std::string>& variables)
 	{
 		auto found_at = std::find(variables.begin(), variables.end(), name);
+		if (found_at == variables.end())
+			std::cerr << "Error! Usage of undeclared variable " << name << '\n';
 		return (found_at == variables.end()) ? u8(0) : std::distance(variables.begin(), found_at);
 	};
 

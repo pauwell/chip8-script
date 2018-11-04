@@ -31,11 +31,6 @@ int main()
 {
 	system("mode 150");
 
-	// FIX If-bodies cant be empty and using of undeclared variable produces no warning
-
-	// BUG?? Loop exit-conditions are only tested for equality not greater or less then.
-	//		 This can result in an infinite loop if e.g: FOR i=5 TO 10 STEP 2 (i: 5,7,9, 11 ! )
-
 	// Running tests.
 	if (!c8s::run_tests())
 		std::cout << "\n\nTests have failed!\n";

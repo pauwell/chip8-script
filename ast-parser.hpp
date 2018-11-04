@@ -261,6 +261,14 @@ namespace c8s
 				break;
 			}
 
+			// Break if the body of the condition is empty.
+			// TODO need better error handling.
+			if (ast.params[innermost_stmt_index + 1].params.front().type == to_type)
+			{
+				std::cerr << "Error! If-statement bodies can not be empty!\n";
+				return;
+			}
+
 			// Push the nodes that follow onto the statement's `params` until `to_type` is reached.
 			for (unsigned i = innermost_stmt_index + 1; ast.params[i].params.front().type != to_type; ++i)
 			{
