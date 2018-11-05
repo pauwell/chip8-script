@@ -35,22 +35,30 @@ namespace c8s
 	{
 		auto found_at = std::find(variables.begin(), variables.end(), name);
 		if (found_at == variables.end())
-			std::cerr << "Error! Usage of undeclared variable " << name << '\n';
+			compiler_log::write_error("Usage of undeclared variable " + name);
 		return (found_at == variables.end()) ? u8(0) : std::distance(variables.begin(), found_at);
 	};
 
 	std::string var_decl_to_meta(const ASTNode& stmt_node, std::vector<std::string>& variables)
 	{
 		ASTNode source_node = stmt_node;
+
+		if (source_node.params.size() == 0 || source_node.params.front().params.size() == 0)
+		{
+			compiler_log::write_error("Error declaring variable on line " + std::to_string(stmt_node.line_number));
+			return "";
+		}
+
 		ASTNode operator_node = source_node.params.front();
 		ASTNode target_node = operator_node.params.front();
 
 		if (operator_node.type != ASTNodeType::Operator && operator_node.value != "=")
-			std::cerr << "Expected operator `=`!\n";
-
+		{
+			compiler_log::write_error("Expected operator `=` on line " + std::to_string(stmt_node.line_number));
+			return "";
+		}
 		const std::string source_name = source_node.value;
 		const std::string target_value = target_node.value;
-		//std::cout << "Declaring " << source_name << "=" << target_value << "\n";
 
 		if (target_node.type == ASTNodeType::NumberLiteral)
 		{
@@ -64,7 +72,10 @@ namespace c8s
 				return hex_to_string(op);
 			}
 			else
-				std::cerr << "Variable " << source_name << " already exists!\n";
+			{
+				compiler_log::write_error("Declaring an already existing variable " + source_name + " on line " + std::to_string(stmt_node.line_number));
+				return "";
+			}
 		}
 		else if (target_node.type == ASTNodeType::Identifier)
 		{
@@ -78,25 +89,33 @@ namespace c8s
 			}
 		}
 		else
-			std::cerr << "Expected number literal!\n";
+		{
+			compiler_log::write_error("Expected number literal or identifier on line " + std::to_string(stmt_node.line_number));
+			return "";
+		}
 
-		return 0x0;
+		return "";
 	}
 
 	std::string var_expr_to_meta(const ASTNode& stmt_node, std::vector<std::string>& variables)
 	{
+		if (stmt_node.params.size() == 0 || stmt_node.params.front().params.size() == 0)
+		{
+			compiler_log::write_error("Error parsing expression on line " + std::to_string(stmt_node.line_number));
+			return "";
+		}
+
 		ASTNode source_node = stmt_node;
 		ASTNode operator_node = source_node.params.front();
 		ASTNode target_node = operator_node.params.front();
 
 		if (operator_node.type != ASTNodeType::Operator)
-			std::cerr << "Expected operator!\n";
+			compiler_log::write_error("Expected operator on line " + std::to_string(stmt_node.line_number));
 
 		if (target_node.type == ASTNodeType::NumberLiteral)
 		{
 			u8 value_u8 = std::atoi(target_node.value.c_str());
 			u8 v_index = find_var_index(source_node.value, variables);
-			//std::cout << "Expr: " << source_node.value << operator_node.value << (int)value_u8 << '\n';
 
 			if (operator_node.value == "=")
 			{
@@ -109,13 +128,15 @@ namespace c8s
 				return hex_to_string((0x7 << 12) | (v_index << 8) | (value_u8 & 0xFF));
 			}
 			else
-				std::cerr << "Unknown operator: " << operator_node.value << '\n';
+			{
+				compiler_log::write_error("Unknown operator: " + operator_node.value + " on line " + std::to_string(stmt_node.line_number));
+				return "";
+			}
 		}
 		else if (target_node.type == ASTNodeType::Identifier)
 		{
 			u8 source_v_index = find_var_index(source_node.value, variables);
 			u8 target_v_index = find_var_index(target_node.value, variables);
-			//std::cout << "Expr: " << source_node.value << operator_node.value << target_node.value << '\n';
 
 			if (operator_node.value == "=")
 			{
@@ -148,22 +169,33 @@ namespace c8s
 				return hex_to_string((0x8 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x3));
 			}
 			else
-				std::cerr << "Unknown operator: " << operator_node.value << '\n';
+			{
+				compiler_log::write_error("Unknown operator " + operator_node.value + " in expression on line " + std::to_string(stmt_node.line_number));
+				return "";
+			}	
 		}
 
-		return "0x0";
+		compiler_log::write_error("Syntax error in expression on line " + std::to_string(stmt_node.line_number));
+		return "";
 	}
 
 	std::vector<std::string> open_if_statement_to_meta(const ASTNode& stmt_node, std::vector<std::string>& variables, unsigned& if_label_counter)
 	{
+		if (stmt_node.params.size() == 0 || stmt_node.params.front().params.size() == 0)
+		{
+			compiler_log::write_error("Error parsing if-statement on line " + std::to_string(stmt_node.line_number));
+			return {};
+		}
+
 		ASTNode source_node = stmt_node.params.front();
 		ASTNode operator_node = source_node.params.front();
 		ASTNode target_node = operator_node.params.front();
 
 		if (operator_node.type != ASTNodeType::Operator)
-			std::cerr << "Expected operator!\n";
-
-		//std::cout << "if " << source_node.value << operator_node.value << target_node.value << ":\n";
+		{
+			compiler_log::write_error("Expected operator in if-statement on line " + std::to_string(stmt_node.line_number));
+			return {};
+		}
 
 		if (target_node.type == ASTNodeType::NumberLiteral)
 		{
@@ -225,47 +257,51 @@ namespace c8s
 
 	std::vector<std::string> open_for_loop_to_meta(const ASTNode& stmt_node, std::vector<std::string>& variables, unsigned& for_label_counter)
 	{
-		// TODO
-		/*
-			1.1] Create variable `i`
-			1.2] Create variable `ito`
-			1.3] Create variable `istep`
-			2] 6[i]05 // Set v[i] = NN(05)		// Set index-counter
-			3] 6[ito]0A // Set v[ito] = NN(10)	// Save to-value 
-			4] 6[istep]02 // Set v[istep] = NN(2) 	// Save step-value
-			5] Loopstart-label:
-		*/
-		
 		// Fetch nodes.
+		if (stmt_node.params.size() == 0)
+		{
+			compiler_log::write_error("Error creating index variable in for-loop on line " + std::to_string(stmt_node.line_number));
+			return {};
+		}
 		ASTNode var_node = stmt_node.params.front();
+		if (var_node.params.size() == 0 || var_node.params.front().params.size() == 0 || var_node.params.front().params.front().params.size() == 0)
+		{
+			compiler_log::write_error("Error creating range value in for-loop on line " + std::to_string(stmt_node.line_number));
+			return {};
+		}
 		ASTNode to_node = var_node.params.front().params.front().params.front();
+		if (to_node.params.size() == 0 || to_node.params.front().params.size() == 0)
+		{
+			compiler_log::write_error("Error creating step value in for-loop on line " + std::to_string(stmt_node.line_number));
+			return {};
+		}
 		ASTNode step_node = to_node.params.front().params.front();
 
 		// These are dummy ASTNodes to use the `var_decl_to_meta`-function to 
 		// create the additional variables neccessary for the loop.
-		ASTNode ito_dummy{ ASTNodeType::VarDeclaration, var_node.value + "to", {
-			ASTNode{ ASTNodeType::Operator, "=", { to_node.params.front() } } } };
-		ASTNode istep_dummy{ ASTNodeType::VarDeclaration, var_node.value + "step",{
-			ASTNode{ ASTNodeType::Operator, "=",{ step_node.params.front() } } } };
+		ASTNode ito_dummy{ ASTNodeType::VarDeclaration, var_node.value + "to", var_node.line_number, {
+			ASTNode{ ASTNodeType::Operator, "=", var_node.line_number, { to_node.params.front() } } } };
+		ASTNode istep_dummy{ ASTNodeType::VarDeclaration, var_node.value + "step", var_node.line_number, {
+			ASTNode{ ASTNodeType::Operator, "=", var_node.line_number, { step_node.params.front() } } } };
 
-		return {
-			var_decl_to_meta(var_node, variables),
-			var_decl_to_meta(ito_dummy, variables),
-			var_decl_to_meta(istep_dummy, variables),
-			"<!" + std::to_string(for_label_counter++) + "!>"
-		};
+		// Declare the loop variables.
+		std::string index_var = var_decl_to_meta(var_node, variables);
+		std::string index_to_var = var_decl_to_meta(ito_dummy, variables);
+		std::string index_istep_var = var_decl_to_meta(istep_dummy, variables);
+		std::string loop_start_label = "<!" + std::to_string(for_label_counter++) + "!>";
+
+		// Handle errors in the loop-variables declarations.
+		if (index_var.size() == 0 || index_to_var.size() == 0 || index_istep_var.size() == 0 || compiler_log::read_errors().size() != 0)
+		{
+			compiler_log::write_error("Error creating variable " + var_node.value + " on line " + std::to_string(stmt_node.line_number));
+			return {};
+		}
+
+		return { index_var, index_to_var, index_istep_var, loop_start_label };
 	}
 
 	std::vector<std::string> close_for_loop_to_meta(std::vector<std::string>& variables, unsigned& for_label_counter)
 	{
-		// TODO
-		/*
-			6] 8[i][istep]4 
-			7] 5[i][ito]0 	// If i == iend skip jmp instruction and finish loop 
-			8] Jmp to loopstart-label
-			9] Done..
-		*/
-
 		// TODO use STL for this naive loop:
 
 		// The last `x, xto, xstep` triplet in the variables stack must be the corresponding one.
@@ -289,7 +325,14 @@ namespace c8s
 	std::vector<std::string> ast_node_to_meta(const ASTNode& node, std::vector<std::string>& variables, unsigned& if_label_counter, unsigned& for_label_counter)
 	{
 		if (node.params.size() > 1)
-			std::cerr << "Warning! Multiple statements in one.\n";
+			compiler_log::write_warning("Multiple statements in one on line " + std::to_string(node.line_number));
+		
+		if (node.params.size() == 0)
+		{
+			compiler_log::write_error("Empty statement on line " + std::to_string(node.line_number)); 
+			return {};
+		}
+
 		const auto& stmt_node = node.params.front();
 
 		if (node.type == ASTNodeType::IfStatement)
@@ -298,7 +341,7 @@ namespace c8s
 		}
 		if (stmt_node.type == ASTNodeType::EndifStatement)
 		{
-			return { close_if_statement_to_meta(if_label_counter) };
+			return close_if_statement_to_meta(if_label_counter);
 		}
 		if (node.type == ASTNodeType::ForLoop)
 		{
@@ -310,23 +353,33 @@ namespace c8s
 		}
 		if (stmt_node.type == ASTNodeType::VarDeclaration)
 		{
-			return { var_decl_to_meta(stmt_node, variables) };
+			auto var_decl = var_decl_to_meta(stmt_node, variables);
+			if (var_decl.length() == 0) return {};
+			return { var_decl };
 		}
 		if (stmt_node.type == ASTNodeType::VarExpression)
 		{
-			return { var_expr_to_meta(stmt_node, variables) };
+			auto var_expr = var_expr_to_meta(stmt_node, variables);
+			if (var_expr.length() == 0) return {};
+			return { var_expr };
 		}
 		if (stmt_node.type == ASTNodeType::EndOfProgram)
 		{
 			return { "0" };
 		}
 		
-		std::cerr << "Invalid statement: " << stmt_node.value << '\n';
-		return { "0x0" };
+		compiler_log::write_error("Invalid statement " + stmt_node.value + " in expression on line " + std::to_string(stmt_node.line_number));
+		return { };
 	}
 
 	std::vector<std::string> walk_statements_and_convert_to_meta(const ASTNode& root_node, std::vector<std::string>& variables, unsigned& if_label_counter, unsigned& for_label_counter)
 	{
+		if (root_node.params.size() == 0)
+		{
+			compiler_log::write_error("Empty program!");
+			return {};
+		}
+
 		std::vector<std::string> meta_opcodes;
 
 		for (const auto& node : root_node.params)
@@ -340,6 +393,7 @@ namespace c8s
 			else
 			{
 				std::vector<std::string> new_opcodes = ast_node_to_meta(node, variables, if_label_counter, for_label_counter);
+				if (new_opcodes.size() == 0 && compiler_log::read_errors().size() != 0) return {};
 				meta_opcodes.insert(meta_opcodes.end(), new_opcodes.begin(), new_opcodes.end());
 			}
 		}
@@ -350,6 +404,9 @@ namespace c8s
 	// Generate `meta-code` from the AST.
 	std::vector<std::string> generate_meta_opcodes(ASTNode program)
 	{
+		if (program.type == ASTNodeType::Error || compiler_log::read_errors().size() != 0)
+			return {};
+
 		std::vector<std::string> meta_opcodes;
 		std::vector<std::string> variables;
 

@@ -30,15 +30,18 @@
 #include <fstream>
 #include <utility>
 #include <algorithm>
-#include <stdlib.h> // itoa
 
 #include "conversion.hpp"
+#include "compiler_log.hpp"
 
 namespace c8s
 {
 	// Creating the finished opcodes using `meta opcodes` produced by the meta generator.
 	std::vector<u16> create_opcodes_from_meta(std::vector<std::string> meta_opcodes)
 	{
+		if (meta_opcodes.size() == 0 || compiler_log::read_errors().size() != 0)
+			return {};
+
 		// Remove last (zero) opcode.
 		if (meta_opcodes.back() == "0")
 			meta_opcodes.pop_back();
@@ -100,9 +103,8 @@ namespace c8s
 		{
 			if (std::find(meta.begin(), meta.end(), '<') != meta.end())
 			{
-				std::cerr << "Error! All labels should have been parsed by now\n";
-				opcodes.push_back(0x0);
-				continue;
+				compiler_log::write_error("Opcode generation error! All labels should have been parsed by now!");
+				return {};
 			}
 
 			try
@@ -112,11 +114,13 @@ namespace c8s
 			}
 			catch (std::invalid_argument ex)
 			{
-				std::cerr << "Can not convert " << meta << " to hexadecimal in " << ex.what() << '\n';
+				compiler_log::write_error("Unable to convert " + meta + " to hexadecimal in " + ex.what());
+				return {};
 			}
 			catch (...)
 			{
-				std::cerr << "Unknown error occurred while trying to convert opcode " << meta << '\n';
+				compiler_log::write_error("Unknown error occurred while trying to convert opcode " + meta);
+				return {};
 			}
 		}
 

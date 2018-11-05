@@ -40,6 +40,7 @@ namespace c8s
 		EndOfProgram,	// Must be the last statement in the program.
 		Error,		// Gets inserted to show where an error happened.
 		Deletable,	// Nodes that are `Deletable` should be removed.
+		Raw,	// raw 6001.
 		Statement,	// A single statement.
 		Operator,	// E.g: ==, +=, + ...
 		VarDeclaration,	// var XYZ
@@ -62,10 +63,11 @@ namespace c8s
 	// A node in the abstract syntax tree.
 	struct ASTNode
 	{
-		ASTNode(ASTNodeType type, std::string value, std::vector<ASTNode> params)
-			: type{ type }, value{ value }, params{ params } {}
+		ASTNode(ASTNodeType type, std::string value, unsigned line_number, std::vector<ASTNode> params)
+			: type{ type }, value{ value }, line_number{ line_number }, params{ params } {}
 		ASTNodeType type;
 		std::string value;
+		unsigned line_number;
 		std::vector<ASTNode> params;
 	};
 
@@ -82,7 +84,7 @@ namespace c8s
 	template<typename T>
 	auto create_node_and_walk(ASTNodeType node_type, Token tok, std::vector<Token>::iterator &cursor,  T walk)
 	{
-		ASTNode node = ASTNode{ node_type, tok.value,{} };
+		ASTNode node = ASTNode{ node_type, tok.value, tok.line_number, {} };
 		if ((++cursor)->type != TokenType::ClosingStatement)
 			node.params.push_back(walk(cursor, node));
 		return node;
@@ -97,13 +99,13 @@ namespace c8s
 		{
 			if (tok.type == TokenType::Var)
 			{
-				ASTNode var_decl = ASTNode{ ASTNodeType::VarDeclaration, (++cursor)->value,{} };
+				ASTNode var_decl = ASTNode{ ASTNodeType::VarDeclaration, (++cursor)->value, tok.line_number, {} };
 				var_decl.params.push_back(walk(++cursor, var_decl));
 				return var_decl;
 			}
 			if (tok.type == TokenType::Identifier)
 			{
-				ASTNode var_expr = ASTNode{ ASTNodeType::VarExpression, tok.value, {} };
+				ASTNode var_expr = ASTNode{ ASTNodeType::VarExpression, tok.value, tok.line_number, {} };
 				var_expr.params.push_back(walk(++cursor, var_expr));
 				return var_expr;
 				
@@ -115,6 +117,10 @@ namespace c8s
 			if (tok.type == TokenType::For)
 			{
 				return create_node_and_walk(ASTNodeType::ForLoop, tok, cursor, walk);
+			}
+			if (tok.type == TokenType::Raw)
+			{
+				// TODO
 			}
 		}	
 		else if (parent.type == ASTNodeType::Identifier)
@@ -206,35 +212,37 @@ namespace c8s
 		if (tok.type == TokenType::Endif)
 		{
 			++cursor;
-			return ASTNode{ ASTNodeType::EndifStatement, tok.value, {} };
+			return ASTNode{ ASTNodeType::EndifStatement, tok.value, tok.line_number, {} };
 		}
 
 		if (tok.type == TokenType::Endfor)
 		{
 			++cursor;
-			return ASTNode{ ASTNodeType::EndforLoop, tok.value,{} };
+			return ASTNode{ ASTNodeType::EndforLoop, tok.value, tok.line_number, {} };
 		}
 
 		if (tok.type == TokenType::Numerical)
 		{
 			++cursor;
-			return ASTNode{ ASTNodeType::NumberLiteral, tok.value,{} };
+			return ASTNode{ ASTNodeType::NumberLiteral, tok.value, tok.line_number, {} };
 		}
 
 		if (tok.type == TokenType::EndOfProgram)
 		{
 			++cursor;
-			return ASTNode{ ASTNodeType::EndOfProgram, "end", {} };
+			return ASTNode{ ASTNodeType::EndOfProgram, "end", tok.line_number, {} };
 		}
 
+
+		compiler_log::write_error("Syntax error on line " + std::to_string(tok.line_number));
 		++cursor;
-		return ASTNode{ ASTNodeType::Error, "@no_impl", {} };
+		return ASTNode{ ASTNodeType::Error, "error", tok.line_number, {} };
 	}
 
 
 	// The `bodies` of if-statements and for-loops is moved into the `params` of
 	// the parent. 
-	void move_bodies_to_params(ASTNode& ast)
+	bool move_bodies_to_params(ASTNode& ast)
 	{
 		for (;;) 
 		{
@@ -255,18 +263,15 @@ namespace c8s
 				}
 			}
 
-			// Finish the loop if no nodes were left to find.
+			// Finish the loop if no nodes are left.
 			if (from_type == ASTNodeType::Error || to_type == ASTNodeType::Error)
-			{
 				break;
-			}
 
-			// Break if the body of the condition is empty.
-			// TODO need better error handling.
+			// Log error and return false if the body of the condition is empty.
 			if (ast.params[innermost_stmt_index + 1].params.front().type == to_type)
 			{
-				std::cerr << "Error! If-statement bodies can not be empty!\n";
-				return;
+				compiler_log::write_error("Bodies of if-statements can not be empty!");
+				return false;
 			}
 
 			// Push the nodes that follow onto the statement's `params` until `to_type` is reached.
@@ -292,20 +297,19 @@ namespace c8s
 			// Clean up nodes that were marked as `deletable`.
 			remove_deletables(ast);
 		}
+		return true;
 	}
 
 	// Parse the list of tokens into an AST.
 	ASTNode parse_tokens_to_ast(std::vector<Token> &token_list)
 	{
-		auto cursor = token_list.begin();
-		auto ast = ASTNode{ ASTNodeType::Program, "", {} };
-
-		// Check for errors in the input token-list.
-		if (token_list.back().type == TokenType::Error)
+		if (token_list.size() == 0 || compiler_log::read_errors().size() > 0)
 		{
-			ast.value = "error";
-			return ast;
+			return ASTNode{ ASTNodeType::Error, "error", 0, {} };
 		}
+
+		auto cursor = token_list.begin();
+		auto ast = ASTNode{ ASTNodeType::Program, "", 0, {} };
 
 		while (cursor != token_list.end())
 		{
@@ -317,12 +321,16 @@ namespace c8s
 			}
 
 			// Add statements and recursively call `walk()` on their parameters.
-			ASTNode stmt = ASTNode{ ASTNodeType::Statement, "stmt", {} };
+			ASTNode stmt = ASTNode{ ASTNodeType::Statement, "stmt", cursor->line_number, {} };
 			stmt.params.push_back(walk(cursor, stmt));
 			ast.params.push_back(stmt);
 		}
 
 		move_bodies_to_params(ast);
+
+		// Check for empty if-bodies.
+		if (!move_bodies_to_params(ast) || compiler_log::read_errors().size() != 0)
+			return ASTNode{ ASTNodeType::Error, "error", 0, {} };
 
 		return ast;
 	}

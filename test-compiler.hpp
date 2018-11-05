@@ -61,11 +61,9 @@ namespace c8s
 	// Run all tests.
 	bool run_tests()
 	{
-		auto empty_if = test_compiler("Empty if statement",
-			"b = 20\n"\
+		auto empty_if = test_compiler("Test raw",
 			"VAR a = 10\n"\
-			"IF a == 10:\n"\
-			"ENDIF;"\
+			"RAW 6001\n"
 		);
 
 		auto for_test_output = test_compiler("Test for-loop",

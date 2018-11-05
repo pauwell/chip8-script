@@ -22,27 +22,35 @@
 * SOFTWARE.
 */
 
-#include <iostream>
+#pragma once
+
 #include <vector>
+#include <string>
 
-#include "test-compiler.hpp"
-#include "compiler.hpp"
-
-int main()
+namespace c8s
 {
-	system("mode 150");
-
-	// Run all tests defined in `test-compiler.hpp`.
-	//c8s::run_tests();
-
-	for (;;)
+	class compiler_log
 	{
-		std::string input{};
-		std::getline(std::cin, input);
-		if (input == "exit" || input == "quit") break;
-		c8s::compile(input, true);
-	}
-	
+		static std::vector<std::string> m_messages, m_warnings, m_errors;
 
-	return 0;
+	public:
+		static void reset_all()
+		{
+			m_messages.clear();
+			m_warnings.clear();
+			m_errors.clear();
+		}
+
+		static const std::vector<std::string>& read_messages() { return m_messages; }
+		static const std::vector<std::string>& read_warnings() { return m_warnings; }
+		static const std::vector<std::string>& read_errors() { return m_errors; }
+
+		static void write_message(std::string msg) { m_messages.push_back(msg); }
+		static void write_warning(std::string warning) { m_warnings.push_back(warning); }
+		static void write_error(std::string error) { m_errors.push_back(error); }
+	};
+
+	std::vector<std::string> compiler_log::m_messages{};
+	std::vector<std::string> compiler_log::m_warnings{};
+	std::vector<std::string> compiler_log::m_errors{};
 }
