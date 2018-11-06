@@ -120,7 +120,9 @@ namespace c8s
 			}
 			if (tok.type == TokenType::Raw)
 			{
-				// TODO
+				ASTNode raw_expr{ ASTNodeType::Raw, tok.value, tok.line_number, {} };
+				raw_expr.params.push_back(walk(++cursor, raw_expr));
+				return raw_expr;
 			}
 		}	
 		else if (parent.type == ASTNodeType::Identifier)
@@ -132,6 +134,10 @@ namespace c8s
 			if (tok.type == TokenType::To)
 			{
 				return create_node_and_walk(ASTNodeType::To, tok, cursor, walk);
+			}
+			if (tok.type == TokenType::Colon)
+			{
+				return create_node_and_walk(ASTNodeType::Operator, tok, cursor, walk);
 			}
 		}
 		else if (parent.type == ASTNodeType::Operator)
@@ -169,6 +175,8 @@ namespace c8s
 			{
 				return create_node_and_walk(ASTNodeType::Identifier, tok, cursor, walk);
 			}
+			// TODO if a==b: does not work
+
 			//return create_node_and_walk(ASTNodeType::IfStatement, tok, cursor, walk);
 		}
 		else if (parent.type == ASTNodeType::ForLoop)
@@ -206,6 +214,14 @@ namespace c8s
 			if (tok.type == TokenType::Numerical)
 			{
 				return create_node_and_walk(ASTNodeType::NumberLiteral, tok, cursor, walk);
+			}
+		}
+		else if (parent.type == ASTNodeType::Raw)
+		{
+			if (tok.type == TokenType::Numerical)
+			{
+				++cursor;
+				return ASTNode{ ASTNodeType::NumberLiteral, tok.value, tok.line_number, {} };
 			}
 		}
 		

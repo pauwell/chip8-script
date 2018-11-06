@@ -26,23 +26,14 @@
 #include <vector>
 
 #include "test-compiler.hpp"
-#include "compiler.hpp"
 
 int main()
 {
 	system("mode 150");
 
 	// Run all tests defined in `test-compiler.hpp`.
-	//c8s::run_tests();
+	c8s::run_tests();
 
-	for (;;)
-	{
-		std::string input{};
-		std::getline(std::cin, input);
-		if (input == "exit" || input == "quit") break;
-		c8s::compile(input, true);
-	}
-	
-
+	std::cin.get();
 	return 0;
 }

@@ -25,48 +25,29 @@
 #pragma once
 
 #include "debug-output.hpp"
-#include "opcode-gen.hpp"
+#include "compiler.hpp"
 
 namespace c8s
 {
-	std::vector<u16> test_compiler(std::string what, std::string code,
-		bool is_print_meta = true,
-		bool is_print_ast = true,
-		bool is_print_tokens = true,
-		bool is_print_ops = true)
-	{
-		print_seperator(true);
-		std::cout << "Test => " << what << '\n';
-		print_seperator(true);
-
-		// Tokenize.
-		auto tokens = c8s::split_code_into_tokens(code);
-		if (is_print_tokens) print_tokens(tokens);
-
-		// Parse.
-		auto ast = c8s::parse_tokens_to_ast(tokens);
-		if (is_print_ast) print_ast(ast);
-
-		// Generate meta.
-		auto meta_ops = c8s::generate_meta_opcodes(ast);
-		if (is_print_meta) print_meta(meta_ops);
-
-		// Generate opcodes.
-		auto ops = c8s::create_opcodes_from_meta(meta_ops);
-		if (is_print_ops) print_opcodes(ops);
-
-		return ops;
-	}
-
 	// Run all tests.
 	bool run_tests()
 	{
-		auto empty_if = test_compiler("Test raw",
+		auto raw_test_output = compile(
 			"VAR a = 10\n"\
-			"RAW 6001\n"
+			"RAW 6001\n",
+			true, true
 		);
 
-		auto for_test_output = test_compiler("Test for-loop",
+		if (compiler_log::read_errors().size() != 0
+			|| raw_test_output.size() != 2
+			|| raw_test_output[0] != 0x600A
+			|| raw_test_output[1] != 0x6001
+			) {
+			std::cout << "\n\raw_test_output failed!\n";
+			return false;
+		}
+
+		auto for_test_output = compile(
 			"VAR a = 1\n"\
 			"FOR i=4 TO 10 STEP 2:\n"\
 			"	IF a==1:\n"\
@@ -74,10 +55,13 @@ namespace c8s
 			"	ENDIF\n"\
 			"	a += 1\n"\
 			"ENDFOR\n"\
-			"VAR z=10;"
+			"VAR z=10;",
+			true, true
 		);
 
-		if (   for_test_output[0] != 0x6001
+		if ( compiler_log::read_errors().size() != 0
+			|| for_test_output.size() != 12
+			|| for_test_output[0] != 0x6001
 			|| for_test_output[1] != 0x6104
 			|| for_test_output[2] != 0x620A
 			|| for_test_output[3] != 0x6302
@@ -90,23 +74,19 @@ namespace c8s
 			|| for_test_output[10]!= 0x1208
 			|| for_test_output[11]!= 0x640A
 			) {
-			std::cout << "\n\nTest failed!\n";
+			std::cout << "\n\nfor_test_output failed!\n";
 			return false;
 		}
 
-		// Output opcodes to ROM file.
-		c8s::write_opcodes_to_file(for_test_output, "OUT_ROM");
-		std::cout << "\n\nOpcodes written to `OUT_ROM`..\nDone!\n\n";
-
-		auto test_output = test_compiler("Test full set of features",
+		auto test_output = compile(
 			"VAR a = 4\n"\
 			"VAR b = 2\n"\
 			"IF a == 4:\n"\
-			"IF a != 4:\n"\
-			"	a = 8\n"\
+			"	IF a != 4:\n"\
+			"		a = 8\n"\
+			"	ENDIF\n"\
 			"ENDIF\n"\
-			"ENDIF\n"\
-			"IF a == b:\n"\
+			"IF a == 3:\n"\
 			"	IF a != b:\n"\
 			"		a = b\n"\
 			"	ENDIF\n"\
@@ -116,17 +96,20 @@ namespace c8s
 			"a |= b\n"\
 			"a &= b\n"\
 			"a ^= b\n"\
-			"a -= b"
+			"a -= b",
+			true, true
 		);
 
-		if (   test_output[0] != 0x6004
+		if (compiler_log::read_errors().size() != 0
+			|| test_output.size() != 18
+			|| test_output[0] != 0x6004
 			|| test_output[1] != 0x6102
 			|| test_output[2] != 0x3004
 			|| test_output[3] != 0x120E
 			|| test_output[4] != 0x4004
 			|| test_output[5] != 0x120E
 			|| test_output[6] != 0x6008
-			|| test_output[7] != 0x5010
+			|| test_output[7] != 0x3003
 			|| test_output[8] != 0x1218
 			|| test_output[9] != 0x9010
 			|| test_output[10]!= 0x1218
@@ -138,12 +121,11 @@ namespace c8s
 			|| test_output[16]!= 0x8013
 			|| test_output[17]!= 0x8015
 		){
-			std::cout << "\n\nTest failed!\n";
+			std::cout << "\n\ntest_output failed!\n";
 			return false;
 		}
 			
 		std::cout << "\n\nAll tests passed!\n";
-
 		return true;
 	}
 }

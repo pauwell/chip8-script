@@ -363,6 +363,11 @@ namespace c8s
 			if (var_expr.length() == 0) return {};
 			return { var_expr };
 		}
+		if (stmt_node.type == ASTNodeType::Raw)
+		{
+			if(stmt_node.params.size() != 0)
+				return { stmt_node.params.front().value };
+		}
 		if (stmt_node.type == ASTNodeType::EndOfProgram)
 		{
 			return { "0" };
