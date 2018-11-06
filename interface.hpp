@@ -22,21 +22,21 @@
 * SOFTWARE.
 */
 
+#pragma once
+
 #include <iostream>
-#include <vector>
 
-#include "test-compiler.hpp"
-#include "interface.hpp"
-
-int main(int argc, char** argv)
+namespace c8s
 {
-	system("mode 150");
+	// TODO
+	void parse_args(int argc, char** const & argv)
+	{
+		if (argc <= 1)
+			return;
 
-	c8s::parse_args(argc, argv);
-
-	// Run all tests defined in `test-compiler.hpp`.
-	//c8s::run_tests();
-
-	std::cin.get();
-	return 0;
+		for (unsigned i = 0; i < argc; ++i)
+		{
+			std::cout << i << ": " << argv[i] << '\n';
+		}
+	}
 }
