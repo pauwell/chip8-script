@@ -25,18 +25,77 @@
 #pragma once
 
 #include <iostream>
+#include <string>
+#include <vector>
 
 namespace c8s
 {
-	// TODO
-	void parse_args(int argc, char** const & argv)
+	void print_intro()
+	{
+		std::cout << "Usage: c8s-compiler.exe [options] file\n";
+		std::cout << "Compile the input $FILE into chip-8 machinecode.\n\nOptions:\n";
+
+		std::cout << "  -o, --output <file> output is saved in <file> instead of `out.c8s`\n";
+		std::cout << "  -h, --help          display this help and exit\n";
+		std::cout << "  -v, --version       print the version\n";
+		std::cout << "  -s, --silent        do not produce any output\n";
+		std::cout << "  -m, --print-steps   print intermediate steps (tokenization, AST creation etc.)\n";
+
+		std::cout << "\n\nFor more information please visit:\n";
+		std::cout << "<https://github.com/pauwell/chip8-script>";
+	}
+
+	struct Flag
+	{
+		char token;
+		std::string param;
+	};
+
+	std::vector<Flag> parse_flags(int argc, char** const & argv)
 	{
 		if (argc <= 1)
-			return;
+			return {};
+
+		std::vector<Flag> flags;
 
 		for (unsigned i = 0; i < argc; ++i)
 		{
-			std::cout << i << ": " << argv[i] << '\n';
+			std::string arg = argv[i];
+
+			// -o file, --output file
+			if (arg.find("-o") == 0 || arg.find("--output") == 0)
+			{
+				// Check if next arg is available and valid.
+				if (i + 1 >= (argc - 1) || argv[i + 1][0] == '-') return {};
+
+				// Get `file` param from next arg.
+				flags.push_back(Flag{ 'o', argv[i + 1] });
+				++i;
+			}
+			// -v, --version
+			else if ((arg[0] == '-' && arg[1] != '-' && arg.find('v') != std::string::npos) || arg.find("--version") == 0)
+			{
+				return { Flag{ 'v', "" } };
+			}
+			// -s, --silent
+			else if ((arg[0] == '-' && arg[1] != '-' && arg.find('s') != std::string::npos) || arg.find("--silent") == 0)
+			{
+				flags.push_back(Flag{ 's', "" });
+			}
+			// -m, --print-steps
+			else if ((arg[0] == '-' && arg[1] != '-' && arg.find('m') != std::string::npos) || arg.find("--print-steps") == 0)
+			{
+				flags.push_back(Flag{ 'm', "" });
+			}
 		}
+
+		// The last arg must be the specified input file.
+		if (argv[argc - 1][0] != '-')
+		{
+			flags.push_back(Flag{ 'i', argv[argc - 1] });
+		}
+		else return {};
+
+		return flags;
 	}
 }

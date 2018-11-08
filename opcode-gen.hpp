@@ -130,7 +130,7 @@ namespace c8s
 	// Write the finished opcodes to a ROM file.
 	void write_opcodes_to_file(std::vector<u16> opcodes, std::string file_path)
 	{
-		std::ofstream ofs{ "OUT_ROM", std::ios::binary };
+		std::ofstream ofs{ file_path, std::ios::binary };
 		for (const auto& op : opcodes)
 		{
 			u16 rev = (op & 0xFF) << 8 | (op) >> 8;
