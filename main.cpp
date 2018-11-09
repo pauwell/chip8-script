@@ -75,14 +75,18 @@ int main(int argc, char** argv)
 	bool is_print_steps = std::find_if(flags.begin(), flags.end(), [](c8s::Flag f) { return f.token == 'm'; }) != flags.end();
 
 	// Compile.
+	std::cout << "Starting to compile..\n";
 	auto compiler_output = c8s::compile(code_input, !is_silent, !is_silent && is_print_steps);
 
-	// Write result to output.
+	// Check for errors in compiler result.
 	if (compiler_output.empty())
 	{
 		std::cout << "Failed...\n";
 		return EXIT_FAILURE;
 	}
+	else std::cout << "Finished!\n";
+
+	// Write result to output.
 	auto out_flag = std::find_if(flags.begin(), flags.end(), [](c8s::Flag f) { return f.token == 'o'; });
 	std::string out_file = (out_flag != flags.end() && !out_flag->param.empty()) ? out_flag->param : "out.c8s";
 	c8s::write_opcodes_to_file(compiler_output, out_file);
@@ -92,6 +96,7 @@ int main(int argc, char** argv)
 	bool is_debug = std::find_if(flags.begin(), flags.end(), [](c8s::Flag f) { return f.token == 'd'; }) != flags.end();
 	if (is_debug)
 	{
+		// Load ROM into debugger.
 		c8s::Chip8Debugger debugger;
 		if (!debugger.loadRom(out_file))
 		{
@@ -105,6 +110,6 @@ int main(int argc, char** argv)
 		while (debugger.runCycle());
 	}
 	
-	std::cout << "Success...\n";
+	std::cout << "Success!\n";
 	return EXIT_SUCCESS;
 }
