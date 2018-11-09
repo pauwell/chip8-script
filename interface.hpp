@@ -33,15 +33,17 @@ namespace c8s
 	void print_intro()
 	{
 		std::cout << "Usage: c8s-compiler.exe [options] file\n";
-		std::cout << "Compile the input $FILE into chip-8 machinecode.\n\nOptions:\n";
+		std::cout << "Compile the chip-8 script source $file into chip-8 machinecode.\n";
 
+		std::cout << "\nOptions:\n";
 		std::cout << "  -o, --output <file> output is saved in <file> instead of `out.c8s`\n";
 		std::cout << "  -h, --help          display this help and exit\n";
 		std::cout << "  -v, --version       print the version\n";
+		std::cout << "  -d, --debug         attach debugger after compilation\n";
 		std::cout << "  -s, --silent        do not produce any output\n";
 		std::cout << "  -m, --print-steps   print intermediate steps (tokenization, AST creation etc.)\n";
 
-		std::cout << "\n\nFor more information please visit:\n";
+		std::cout << "\nFor more information please visit:\n";
 		std::cout << "<https://github.com/pauwell/chip8-script>";
 	}
 
@@ -76,6 +78,11 @@ namespace c8s
 			else if ((arg[0] == '-' && arg[1] != '-' && arg.find('v') != std::string::npos) || arg.find("--version") == 0)
 			{
 				return { Flag{ 'v', "" } };
+			}
+			// -d, --debug
+			else if ((arg[0] == '-' && arg[1] != '-' && arg.find('d') != std::string::npos) || arg.find("--debug") == 0)
+			{
+				flags.push_back(Flag{ 'd', "" });
 			}
 			// -s, --silent
 			else if ((arg[0] == '-' && arg[1] != '-' && arg.find('s') != std::string::npos) || arg.find("--silent") == 0)

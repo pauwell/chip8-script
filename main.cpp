@@ -28,6 +28,7 @@
 
 #include "test-compiler.hpp"
 #include "interface.hpp"
+#include "debugger.hpp"
 
 int main(int argc, char** argv)
 {
@@ -83,17 +84,27 @@ int main(int argc, char** argv)
 		return EXIT_FAILURE;
 	}
 	auto out_flag = std::find_if(flags.begin(), flags.end(), [](c8s::Flag f) { return f.token == 'o'; });
-	if (out_flag != flags.end() && !out_flag->param.empty())
-	{
-		c8s::write_opcodes_to_file(compiler_output, out_flag->param);
-		std::cout << "Output written to `" << out_flag->param << "`\n";
-	}
-	else
-	{
-		c8s::write_opcodes_to_file(compiler_output, "out.c8s");
-		std::cout << "Output written to `out.c8s`\n";
-	}
+	std::string out_file = (out_flag != flags.end() && !out_flag->param.empty()) ? out_flag->param : "out.c8s";
+	c8s::write_opcodes_to_file(compiler_output, out_file);
+	std::cout << "Output written to `" << out_file << "`\n";
 
+	// Attach debugger to output file.
+	bool is_debug = std::find_if(flags.begin(), flags.end(), [](c8s::Flag f) { return f.token == 'd'; }) != flags.end();
+	if (is_debug)
+	{
+		c8s::Chip8Debugger debugger;
+		if (!debugger.loadRom(out_file))
+		{
+			std::cout << "Debugger unable to load the ROM\n";
+			return EXIT_FAILURE;
+		}
+
+		// Run debug process.
+		std::cout << "Start debugging..\n";
+		std::cout << "Press <return> to step to the next instruction\n";
+		while (debugger.runCycle());
+	}
+	
 	std::cout << "Success...\n";
 	return EXIT_SUCCESS;
 }
