@@ -46,7 +46,6 @@
 
 namespace c8s
 {
-
 	const u8 FONTSET[FONTSET_SIZE] =
 	{
 		0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -144,6 +143,7 @@ namespace c8s
 
 				delete[] buffer;
 			}
+			return true;
 		}
 
 		bool runCycle()
@@ -183,6 +183,9 @@ namespace c8s
 				return false;
 			}
 
+			u16 op = instruction;
+			std::ostringstream behavior_oss;
+
 			switch (instruction & 0xF000)
 			{
 			case 0x0000:
@@ -191,11 +194,13 @@ namespace c8s
 				case 0x0: // Clear the screen.
 					clearScreen();
 					m_pc += 2;
+					behavior_oss << std::hex << op << " - 00E0 - Clear the screen";
 					break;
 				case 0xE: // Return from subroutine.
 					--m_sp;
 					m_pc = m_stack[m_sp];
 					m_pc += 2;
+					behavior_oss << std::hex << op << " - 00EE - Return from a subroutine";
 					break;
 				default:
 					std::cout << "Unknown instruction: " << instruction << std::endl;
@@ -203,28 +208,35 @@ namespace c8s
 				break;
 			case 0x1000: // Jump to location nnn.
 				m_pc = nnn;
+				behavior_oss << std::hex << op << " - 1NNN - Jump to location " << nnn;
 				break;
 			case 0x2000: // Call subroutine at nnn.
 				m_stack[m_sp] = m_pc;
 				++m_sp;
 				m_pc = nnn;
+				behavior_oss << std::hex << op << " - 2NNN - Call subroutine at " << nnn;
 				break;
 			case 0x3000: // Skip next instruction if Vx = kk.
 				m_pc += (m_v[x] == kk ? 4 : 2);
+				behavior_oss << std::hex << op << " - 3XNN - Skip next instruction if V[" << std::hex << (int)x << "] = " << std::hex << (int)kk;
 				break;
 			case 0x4000: // Skip next instruction if Vx != kk.
 				m_pc += (m_v[x] != kk ? 4 : 2);
+				behavior_oss << std::hex << op << " - 4XNN - Skip next instruction if V[" << std::hex << (int)x << "] != " << std::hex << (int)kk;
 				break;
 			case 0x5000: // Skip next instruction if Vx = Vy.
 				m_pc += (m_v[x] == m_v[y] ? 4 : 2);
+				behavior_oss << std::hex << op << " - 5XY0 - Skip next instruction if V[" << std::hex << (int)x << "] = V[" << std::hex << (int)y << "]";
 				break;
 			case 0x6000: // Set Vx = kk.
 				m_v[x] = kk;
 				m_pc += 2;
+				behavior_oss << std::hex << op << " - 6XNN - Set V[" << std::hex << (int)x << "] = " << std::hex << (int)kk;
 				break;
 			case 0x7000: // Set Vx = Vx + kk.
 				m_v[x] += kk;
 				m_pc += 2;
+				behavior_oss << std::hex << op << " - 7XNN - Set Vx = V[" << std::hex << (int)x << "] += " << std::hex << (int)kk;
 				break;
 			case 0x8000:
 				switch (instruction & 0xF)
@@ -232,43 +244,52 @@ namespace c8s
 				case 0x0: // Set Vx = Vy.
 					m_v[x] = m_v[y];
 					m_pc += 2;
+					behavior_oss << std::hex << op << " - 8XY0 - Set V[" << std::hex << (int)x << "] = V[" << std::hex << (int)y << "]";
 					break;
 				case 0x1: // Set Vx = Vx OR Vy.
 					m_v[x] |= m_v[y];
 					m_pc += 2;
+					behavior_oss << std::hex << op << " - 8XY1 - Set V[" << std::hex << (int)x << "] |= V[" << std::hex << (int)y << "]";
 					break;
 				case 0x2: // Set Vx = Vx AND Vy.
 					m_v[x] &= m_v[y];
 					m_pc += 2;
+					behavior_oss << std::hex << op << " - 8XY2 - Set V[" << std::hex << (int)x << "] &= V[" << std::hex << (int)y << "]";
 					break;
 				case 0x3: // Set Vx = Vx XOR Vy.
 					m_v[x] ^= m_v[y];
 					m_pc += 2;
+					behavior_oss << std::hex << op << " - 8XY3 - Set V[" << std::hex << (int)x << "] ^= V[" << std::hex << (int)y << "]";
 					break;
 				case 0x4: // Set Vx = Vx + Vy, set VF = carry.
 					m_v[0xF] = (m_v[x] + m_v[y] > 0xFF) ? 1 : 0;
 					m_v[x] = (m_v[x] + m_v[y]) & 0xFF;
 					m_pc += 2;
+					behavior_oss << std::hex << op << " - 8XY4 - Set V[" << std::hex << (int)x << "] += V[" << std::hex << (int)y << "]";
 					break;
 				case 0x5: // Set Vx = Vx - Vy, set VF = NOT borrow.
 					m_v[0xF] = (m_v[x] > m_v[y]) ? 1 : 0;
 					m_v[x] -= m_v[y];
 					m_pc += 2;
+					behavior_oss << std::hex << op << " - 8XY5 - Set V[" << std::hex << (int)x << "] -= V[" << std::hex << (int)y << "]";
 					break;
 				case 0x6: // Set Vx = Vx SHR 1.
 					m_v[0xF] = (m_v[x] & 0x1) != 0 ? 1 : 0;
 					m_v[x] /= 2;
 					m_pc += 2;
+					behavior_oss << std::hex << op << " - 8XY6 - Set V[" << std::hex << (int)x << "] >>= 1";
 					break;
 				case 0x7: // Set Vx = Vy - Vx, set VF = NOT borrow.
 					m_v[0xF] = m_v[y] > m_v[x] ? 1 : 0;
 					m_v[x] = m_v[y] - m_v[x];
 					m_pc += 2;
+					behavior_oss << std::hex << op << " - 8XY7 - Set V[" << std::hex << (int)x << "] |= V[" << std::hex << (int)y << "]";
 					break;
 				case 0xE: // Set Vx = Vx SHL 1.
 					m_v[0xF] = (m_v[x] & 0x80) != 0 ? 1 : 0;
 					m_v[x] *= 2;
 					m_pc += 2;
+					behavior_oss << std::hex << op << " - 8XYE - Set V[" << std::hex << (int)x << "] <<= 1";
 					break;
 				default:
 					std::cout << "Unknown instruction: " << instruction << std::endl;
@@ -276,17 +297,21 @@ namespace c8s
 				break;
 			case 0x9000: // Skip next instruction if Vx != Vy.
 				m_pc += m_v[x] != m_v[y] ? 4 : 2;
+				behavior_oss << std::hex << op << " - 9XY0 - Skip next instruction if V[" << std::hex << (int)x << "] != V[" << std::hex << (int)y << "]";
 				break;
 			case 0xA000: // Set I = nnn.
 				m_i = nnn;
 				m_pc += 2;
+				behavior_oss << std::hex << op << " - ANNN - Set I = " << nnn;
 				break;
 			case 0xB000: // Jump to location nnn + V0.
 				m_pc = nnn + m_v[0];
+				behavior_oss << std::hex << op << " - BNNN - Jump to location " << nnn << " + V[0]";
 				break;
 			case 0xC000: // Set Vx = random byte AND kk.
 				m_v[x] = kk & u8(rand() % 255);
 				m_pc += 2;
+				behavior_oss << std::hex << op << " - CXNN - Set V[" << std::hex << (int)x << "] = rand() & " << std::hex << (int)kk;
 				break;
 			case 0xD000: //  Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
 				u16 pixel;
@@ -314,15 +339,18 @@ namespace c8s
 						m_pixels[j] = false;
 				}
 				m_pc += 2;
+				behavior_oss << std::hex << op << " - DXYN - Display " << n << "-byte from `I` at (V[" << std::hex << (int)x << "], V[" << std::hex << (int)y << "]), set V[F] = collision";
 				break;
 			case 0xE000:
 				switch (instruction & 0xFF)
 				{
 				case 0x9E: // Skip next instruction if key with the value of Vx is pressed. 
 					m_pc += 2;
+					behavior_oss << std::hex << op << " - EX9E - Skip next instruction if key with value of V[" << std::hex << (int)x << "] is pressed";
 					break;
 				case 0xA1: // Skip next instruction if key with the value of Vx is not pressed.
 					m_pc += 2;
+					behavior_oss << std::hex << op << " - EXA1 - Skip next instruction if key with value of V[" << std::hex << (int)x << "] is not pressed";
 					break;
 				default:
 					std::cout << "Unknown instruction: " << instruction << std::endl;
@@ -334,6 +362,7 @@ namespace c8s
 				case 0x07: // Set Vx = delay timer value.
 					m_v[x] = m_delayTimer;
 					m_pc += 2;
+					behavior_oss << std::hex << op << " - FX07 - Set V[" << std::hex << (int)x << "] = delay timer value";
 					break;
 				case 0x0A: // Wait for a key press, store the value of the key in Vx.
 					for (unsigned i = 0; i < 0x10; ++i)
@@ -344,22 +373,27 @@ namespace c8s
 							m_pc += 2;
 						}
 					}
+					behavior_oss << std::hex << op << " - FX0A - Wait for key press, store key-value in V[" << std::hex << (int)x << "]";
 					break;
 				case 0x15: // Set delay timer = Vx.
 					m_delayTimer = m_v[x];
 					m_pc += 2;
+					behavior_oss << std::hex << op << " - FX15 - Set delay timer = V[" << std::hex << (int)x << "]";
 					break;
 				case 0x18: // Set sound timer = Vx.
 					m_soundTimer = m_v[x];
 					m_pc += 2;
+					behavior_oss << std::hex << op << " - FX18 - Set sound timer = V[" << std::hex << (int)x << "]";
 					break;
 				case 0x1E: // Set I = I + Vx.
 					m_i += m_v[x];
 					m_pc += 2;
+					behavior_oss << std::hex << op << " - FX1E - Set I += V[" << std::hex << (int)x << "]";
 					break;
 				case 0x29: // Set I = location of sprite for digit Vx.
 					m_i = m_v[x] * 5; // Multiplied by sprite-size (5). 
 					m_pc += 2;
+					behavior_oss << std::hex << op << " - FX29 - Set I = Location of sprite for digit V[" << std::hex << (int)x << "]";
 					break;
 				case 0x33: // Store BCD representation of Vx in memory locations I, I+1, and I+2.
 						   // Ref: http://www.multigesture.net/wp-content/uploads/mirror/goldroad/chip8.shtml
@@ -367,14 +401,17 @@ namespace c8s
 					m_memory[m_i + 1] = (m_v[x] / 10) % 10;
 					m_memory[m_i + 2] = (m_v[x] % 100) % 10;
 					m_pc += 2;
+					behavior_oss << std::hex << op << " - FX33 - Store BCD representation of V[" << std::hex << (int)x << "] in memory locations I, I+1, I+2";
 					break;
 				case 0x55: // Store registers V0 through Vx in memory starting at location I.
 					for (unsigned j = 0; j < x; ++j) m_memory[m_i + j] = m_v[j];
 					m_pc += 2;
+					behavior_oss << std::hex << op << " - FX55 - Store registers V[0] -> V[" << std::hex << (int)x << "] in memory starting at location `I`";
 					break;
 				case 0x65: // Read registers V0 through Vx from memory starting at location I.
 					for (unsigned j = 0; j < x; ++j) m_v[j] = m_memory[m_i + j];
 					m_pc += 2;
+					behavior_oss << std::hex << op << " - FX65 - Read registers V[0] -> V[" << std::hex << (int)x << "] from memory starting at location `I`";
 					break;
 				default:
 					std::cout << "Unknown instruction: " << instruction << std::endl;
@@ -382,145 +419,6 @@ namespace c8s
 				break;
 			default:
 				std::cout << "Unknown instruction: " << instruction << std::endl;
-			}
-
-			// Define behavior of the current instruction.
-			u16 op = instruction;
-			std::ostringstream behavior_oss;
-			switch (op & 0xF000)
-			{
-			case 0x0000:
-				switch (op & 0xFF)
-				{
-				case 0xE0: // 00E0 - Clear the screen.
-					behavior_oss << std::hex << op << " - 00E0 - Clear the screen";
-					break;
-				case 0xEE: // 00EE - Return from a subroutine.
-					behavior_oss << std::hex << op << " - 00EE - Return from a subroutine";
-					break;
-				default:
-					std::cout << "Unknown instruction: " << op << std::endl;
-				}
-				break;
-			case 0x1000: // 1NNN - Jump to location nnn.
-				behavior_oss << std::hex << op << " - 1NNN - Jump to location " << nnn;
-				break;
-			case 0x2000: // 2NNN - Call subroutine at nnn.
-				behavior_oss << std::hex << op << " - 2NNN - Call subroutine at " << nnn;
-				break;
-			case 0x3000: // 3XNN - Skip next instruction if Vx = kk.
-				behavior_oss << std::hex << op << " - 3XNN - Skip next instruction if V[" << std::hex << (int)x << "] = " << std::hex << (int)kk;
-				break;
-			case 0x4000: // 4XNN - Skip next instruction if Vx != kk.
-				behavior_oss << std::hex << op << " - 4XNN - Skip next instruction if V[" << std::hex << (int)x << "] != " << std::hex << (int)kk;
-				break;
-			case 0x5000: // 5XY0 - Skip next instruction if Vx = Vy.
-				behavior_oss << std::hex << op << " - 5XY0 - Skip next instruction if V[" << std::hex << (int)x << "] = V[" << std::hex << (int)y << "]";
-				break;
-			case 0x6000: // 6XNN - Set Vx = kk.
-				behavior_oss << std::hex << op << " - 6XNN - Set V[" << std::hex << (int)x << "] = " << std::hex << (int)kk;
-				break;
-			case 0x7000: // 7XNN - Set Vx = Vx + kk.
-				behavior_oss << std::hex << op << " - 7XNN - Set Vx = V[" << std::hex << (int)x << "] += " << std::hex << (int)kk;
-				break;
-			case 0x8000:
-				switch (op & 0xF)
-				{
-				case 0x0: // 8XY0 - Set Vx = Vy.
-					behavior_oss << std::hex << op << " - 8XY0 - Set V[" << std::hex << (int)x << "] = V[" << std::hex << (int)y << "]";
-					break;
-				case 0x1: // 8XY1 - Set Vx = Vx OR Vy.
-					behavior_oss << std::hex << op << " - 8XY1 - Set V[" << std::hex << (int)x << "] |= V[" << std::hex << (int)y << "]";
-					break;
-				case 0x2: // 8XY2 - Set Vx = Vx AND Vy.
-					behavior_oss << std::hex << op << " - 8XY2 - Set V[" << std::hex << (int)x << "] &= V[" << std::hex << (int)y << "]";
-					break;
-				case 0x3: // 8XY3 - Set Vx = Vx XOR Vy.
-					behavior_oss << std::hex << op << " - 8XY3 - Set V[" << std::hex << (int)x << "] ^= V[" << std::hex << (int)y << "]";
-					break;
-				case 0x4: // 8XY4 - Set Vx = Vx + Vy, set VF = carry.
-					behavior_oss << std::hex << op << " - 8XY4 - Set V[" << std::hex << (int)x << "] += V[" << std::hex << (int)y << "]";
-					break;
-				case 0x5: // 8XY5 - Set Vx = Vx - Vy, set VF = NOT borrow.
-					behavior_oss << std::hex << op << " - 8XY5 - Set V[" << std::hex << (int)x << "] -= V[" << std::hex << (int)y << "]";
-					break;
-				case 0x6: // 8XY6 - Set Vx = Vx SHR 1.
-					behavior_oss << std::hex << op << " - 8XY6 - Set V[" << std::hex << (int)x << "] >>= 1";
-					break;
-				case 0x7: // 8XY7 - Set Vx = Vy - Vx, set VF = NOT borrow.
-					behavior_oss << std::hex << op << " - 8XY7 - Set V[" << std::hex << (int)x << "] |= V[" << std::hex << (int)y << "]";
-					break;
-				case 0xE: // 8XYE - Set Vx = Vx SHL 1.
-					behavior_oss << std::hex << op << " - 8XYE - Set V[" << std::hex << (int)x << "] <<= 1";
-					break;
-				default:
-					std::cout << "Unknown instruction: " << op << std::endl;
-				}
-				break;
-			case 0x9000: // 9XY0 - Skip next instruction if Vx != Vy.
-				behavior_oss << std::hex << op << " - 9XY0 - Skip next instruction if V[" << std::hex << (int)x << "] != V[" << std::hex << (int)y << "]";
-				break;
-			case 0xA000: // ANNN - Set I = nnn.
-				behavior_oss << std::hex << op << " - ANNN - Set I = " << nnn;
-				break;
-			case 0xB000: // BNNN - Jump to location nnn + V0.
-				behavior_oss << std::hex << op << " - BNNN - Jump to location " << nnn << " + V[0]";
-				break;
-			case 0xC000: // CXNN -  Set Vx = random byte AND kk.
-				behavior_oss << std::hex << op << " - CXNN - Set V[" << std::hex << (int)x << "] = rand() & " << std::hex << (int)kk;
-				break;
-			case 0xD000: // DXYN - Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
-				behavior_oss << std::hex << op << " - DXYN - Display " << n << "-byte sprite from location `I` at (V[" << std::hex << (int)x << "], V[" << std::hex << (int)y << "]), set V[F] = collision";
-				break;
-			case 0xE000:
-				switch (op & 0xFF)
-				{
-				case 0x9E: // EX9E - Skip next instruction if key with the value of Vx is pressed. 
-					behavior_oss << std::hex << op << " - EX9E - Skip next instruction if key with value of V[" << std::hex << (int)x << "] is pressed";
-					break;
-				case 0xA1: // EXA1 - Skip next instruction if key with the value of Vx is not pressed.
-					behavior_oss << std::hex << op << " - EXA1 - Skip next instruction if key with value of V[" << std::hex << (int)x << "] is not pressed";
-					break;
-				default:
-					std::cout << "Unknown instruction: " << op << std::endl;
-				}
-				break;
-			case 0xF000:
-				switch (op & 0xFF)
-				{
-				case 0x07: // FX07 - Set Vx = delay timer value.
-					behavior_oss << std::hex << op << " - FX07 - Set V[" << std::hex << (int)x << "] = delay timer value";
-					break;
-				case 0x0A: // FX0A - Wait for a key press, store the value of the key in Vx.
-					behavior_oss << std::hex << op << " - FX0A - Wait for a key press, store the value of the key in V[" << std::hex << (int)x << "]";
-					break;
-				case 0x15: // FX15 - Set delay timer = Vx.
-					behavior_oss << std::hex << op << " - FX15 - Set delay timer = V[" << std::hex << (int)x << "]";
-					break;
-				case 0x18: // FX18 - Set sound timer = Vx.
-					behavior_oss << std::hex << op << " - FX18 - Set sound timer = V[" << std::hex << (int)x << "]";
-					break;
-				case 0x1E: // FX1E - Set I = I + Vx.
-					behavior_oss << std::hex << op << " - FX1E - Set I += V[" << std::hex << (int)x << "]";
-					break;
-				case 0x29: // FX29 - Set I = location of sprite for digit Vx.
-					behavior_oss << std::hex << op << " - FX29 - Set I = Location of sprite for digit V[" << std::hex << (int)x << "]";
-					break;
-				case 0x33: // FX33 - Store BCD representation of Vx in memory locations I, I+1, and I+2.
-					behavior_oss << std::hex << op << " - FX33 - Store BCD representation of V[" << std::hex << (int)x << "] in memory locations I, I+1, I+2";
-					break;
-				case 0x55: // FX55 - Store registers V0 through Vx in memory starting at location I.
-					behavior_oss << std::hex << op << " - FX55 - Store registers V[0] -> V[" << std::hex << (int)x << "] in memory starting at location `I`";
-					break;
-				case 0x65: // FX65 - Read registers V0 through Vx from memory starting at location I.
-					behavior_oss << std::hex << op << " - FX65 - Read registers V[0] -> V[" << std::hex << (int)x << "] from memory starting at location `I`";
-					break;
-				default:
-					std::cout << "Unknown instruction: " << op << std::endl;
-				}
-				break;
-			default:
-				std::cout << "Unknown instruction: " << op << std::endl;
 			}
 
 			// Output.

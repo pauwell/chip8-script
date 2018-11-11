@@ -302,8 +302,6 @@ namespace c8s
 
 	std::vector<std::string> close_for_loop_to_meta(std::vector<std::string>& variables, unsigned& for_label_counter)
 	{
-		// TODO use STL for this naive loop:
-
 		// The last `x, xto, xstep` triplet in the variables stack must be the corresponding one.
 		unsigned var_idx = 0;
 		for (unsigned i = variables.size() - 1; i > 1; --i)
@@ -377,7 +375,7 @@ namespace c8s
 		return { };
 	}
 
-	std::vector<std::string> walk_statements_and_convert_to_meta(const ASTNode& root_node, std::vector<std::string>& variables, unsigned& if_label_counter, unsigned& for_label_counter)
+	std::vector<std::string> walk_statements_and_convert_to_meta(const ASTNode& root_node, std::vector<std::string>& variables, unsigned& if_label_counter, unsigned& for_label_counter, unsigned line=1)
 	{
 		if (root_node.params.size() == 0)
 		{
@@ -392,14 +390,26 @@ namespace c8s
 			// Call this function again recursively, if there are nested statements.
 			if (node.params.size() > 1)
 			{
-				std::vector<std::string> nested_opcodes = walk_statements_and_convert_to_meta(node, variables, if_label_counter, for_label_counter);
+				std::vector<std::string> nested_opcodes = walk_statements_and_convert_to_meta(node, variables, if_label_counter, for_label_counter, line);
 				meta_opcodes.insert(meta_opcodes.end(), nested_opcodes.begin(), nested_opcodes.end());
+				
+				// Add real distance to line counter. That means ignore meta-opcodes containing '<!'.
+				line += std::count_if(nested_opcodes.begin(), nested_opcodes.end(), [](std::string s) {
+					return s.find("<!") == std::string::npos;
+				});
 			}
 			else
 			{
+				std::cout << "src [" << node.line_number << "] dest[" << line << "]\n";
+
 				std::vector<std::string> new_opcodes = ast_node_to_meta(node, variables, if_label_counter, for_label_counter);
 				if (new_opcodes.size() == 0 && compiler_log::read_errors().size() != 0) return {};
 				meta_opcodes.insert(meta_opcodes.end(), new_opcodes.begin(), new_opcodes.end());
+
+				// Add real distance to line counter. That means ignore meta-opcodes containing '<!'.
+				line += std::count_if(new_opcodes.begin(), new_opcodes.end(), [](std::string s) {
+					return s.find("<!") == std::string::npos;
+				});
 			}
 		}
 

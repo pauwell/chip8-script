@@ -28,6 +28,7 @@
 #include <cstdlib>
 #include <exception>
 #include <array>
+#include <numeric>
 
 #include "token-parser.hpp"
 
@@ -323,6 +324,20 @@ namespace c8s
 		{
 			return ASTNode{ ASTNodeType::Error, "error", 0, {} };
 		}
+
+		// Check for missing endif/endfor statements.
+		auto open_if_for = std::count_if(token_list.begin(), token_list.end(), [](Token t) { 
+			return t.type == TokenType::If || t.type == TokenType::For; 
+		});
+		auto closed_if_for = std::count_if(token_list.begin(), token_list.end(), [](Token t) { 
+			return t.type == TokenType::Endif || t.type == TokenType::Endfor; 
+		});
+		if (open_if_for != closed_if_for)
+		{
+			compiler_log::write_error("Missing endif/endfor\n");
+			return ASTNode{ ASTNodeType::Error, "error", 0,{} };
+		}
+
 
 		auto cursor = token_list.begin();
 		auto ast = ASTNode{ ASTNodeType::Program, "", 0, {} };

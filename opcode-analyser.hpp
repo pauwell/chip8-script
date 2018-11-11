@@ -78,7 +78,7 @@ namespace c8s
 				std::cout << std::hex << op << " - 6XNN - Set V[" << x << "] = " << kk << '\n';
 				break;
 			case 0x7000: // 7XNN - Set Vx = Vx + kk.
-				std::cout << std::hex << op << " - 7XNN - Set Vx = V[" << x << "] += " << kk << '\n';
+				std::cout << std::hex << op << " - 7XNN - Set V[" << x << "] += " << kk << '\n';
 				break;
 			case 0x8000:
 				switch (op & 0xF)
