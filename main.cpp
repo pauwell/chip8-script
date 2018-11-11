@@ -32,8 +32,6 @@
 
 int main(int argc, char** argv)
 {
-	system("mode 150");
-
 	// Parse arguments.
 	auto flags = c8s::parse_flags(argc, argv);
 
@@ -111,5 +109,6 @@ int main(int argc, char** argv)
 	}
 	
 	std::cout << "Success!\n";
+	std::cin.get();
 	return EXIT_SUCCESS;
 }

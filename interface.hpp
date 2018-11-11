@@ -34,7 +34,7 @@ namespace c8s
 	{
 		std::cout << "Usage: c8s-compiler.exe [options] file\n";
 		std::cout << "Compile the chip-8 script source $file into chip-8 machinecode.\n";
-
+		
 		std::cout << "\nOptions:\n";
 		std::cout << "  -o, --output <file> output is saved in <file> instead of `out.c8s`\n";
 		std::cout << "  -h, --help          display this help and exit\n";
@@ -60,7 +60,7 @@ namespace c8s
 
 		std::vector<Flag> flags;
 
-		for (unsigned i = 0; i < argc; ++i)
+		for (int i = 0; i < argc; ++i)
 		{
 			std::string arg = argv[i];
 
