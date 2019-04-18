@@ -30,7 +30,7 @@
 namespace c8s
 {
 	// Debug output seperator line.
-	void print_seperator(bool strong = false)
+	void print_separator(bool strong = false)
 	{
 		for (unsigned i = 0; i < 65; ++i)
 			std::cout << ((strong) ? '=' : '-');
@@ -40,9 +40,9 @@ namespace c8s
 	// Debug output tokens.
 	void print_tokens(const std::vector<c8s::Token>& tokens)
 	{
-		print_seperator();
+		print_separator();
 		std::cout << "1] Split input code into tokens\n";
-		print_seperator();
+		print_separator();
 		for (const auto& e : tokens)
 		{
 			std::cout << "T[" << e.value << "] ";
@@ -57,9 +57,9 @@ namespace c8s
 	{
 		if (depth == 0)
 		{
-			print_seperator();
+			print_separator();
 			std::cout << "2] Parse tokens into abstract syntax tree\n";
-			print_seperator();
+			print_separator();
 		}
 		for (unsigned i = 0; i < depth; ++i) std::cout << "|`\t";
 		//std::cout << "|\n";
@@ -83,9 +83,9 @@ namespace c8s
 	// Debug output meta-opcodes.
 	void print_meta(std::vector<std::string> meta_ops)
 	{
-		print_seperator();
+		print_separator();
 		std::cout << "3] Creating `meta-opcodes` from the AST\n";
-		print_seperator();
+		print_separator();
 		std::cout << "(This is the last step before the finished opcodes.\n";
 		std::cout << "Now we only have to resolve the labels `<1>,<2>..`\n"; 
 		std::cout << "to their line - number at `<!1!> , <!2!>..`)\n";
@@ -98,9 +98,9 @@ namespace c8s
 	// Debug output opcodes.
 	void print_opcodes(std::vector<u16> opcodes)
 	{
-		print_seperator();
+		print_separator();
 		std::cout << "4] Creating finished opcodes from `meta`\n";
-		print_seperator();
+		print_separator();
 		analyse_opcodes(opcodes);
 	}
 }

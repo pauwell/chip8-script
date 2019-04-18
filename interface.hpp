@@ -100,9 +100,9 @@ namespace c8s
 		if (argv[argc - 1][0] != '-')
 		{
 			flags.push_back(Flag{ 'i', argv[argc - 1] });
+			return flags;
 		}
-		else return {};
-
-		return flags;
+		
+		return {};
 	}
 }
