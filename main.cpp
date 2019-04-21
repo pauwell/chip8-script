@@ -49,6 +49,12 @@ int main(int argc, char** argv)
 		return EXIT_SUCCESS;
 	}
 
+	// If the tests flag is set, run the tests and exit.
+	if (std::find_if(flags.begin(), flags.end(), [](c8s::Flag f) { return f.token == 't'; }) != flags.end())
+	{
+		return c8s::run_tests() ? EXIT_SUCCESS : EXIT_FAILURE;
+	}
+
 	// Read the input file.
 	if (flags.back().token != 'i' || flags.back().param.empty())
 	{

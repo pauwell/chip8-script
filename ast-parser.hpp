@@ -53,7 +53,10 @@ namespace c8s
 		Step,	// 0 to 10 step 1
 		EndforLoop,	// End marker for for-loop bodies.
 		Identifier,	// Name of a (valid) variable.
-		NumberLiteral	// Any number (1,2,3 ...)
+		NumberLiteral,	// Any number (1,2,3 ...)
+		FunctionCall,	// cls()
+		OpenBrace,		// (
+		ClosingBrace	// )
 	};
 
 	// List of all supported operators.
@@ -125,6 +128,10 @@ namespace c8s
 				raw_expr.params.push_back(walk(++cursor, raw_expr));
 				return raw_expr;
 			}
+			if (tok.type == TokenType::FunctionCall)
+			{
+				return create_node_and_walk(ASTNodeType::FunctionCall, tok, cursor, walk);
+			}
 		}	
 		else if (parent.type == ASTNodeType::Identifier)
 		{
@@ -139,6 +146,13 @@ namespace c8s
 			if (tok.type == TokenType::Colon)
 			{
 				return create_node_and_walk(ASTNodeType::Operator, tok, cursor, walk);
+			}
+		}
+		else if (parent.type == ASTNodeType::FunctionCall)
+		{
+			if (tok.type == TokenType::OpenBrace)
+			{
+				return create_node_and_walk(ASTNodeType::OpenBrace, tok, cursor, walk);
 			}
 		}
 		else if (parent.type == ASTNodeType::Operator)
@@ -236,6 +250,12 @@ namespace c8s
 		{
 			++cursor;
 			return ASTNode{ ASTNodeType::EndforLoop, tok.value, tok.line_number, {} };
+		}
+
+		if (tok.type == TokenType::ClosingBrace)
+		{
+			++cursor;
+			return ASTNode{ ASTNodeType::ClosingBrace, tok.value, tok.line_number, {} };
 		}
 
 		if (tok.type == TokenType::Numerical)

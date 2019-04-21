@@ -320,6 +320,39 @@ namespace c8s
 		return endfor_ops;
 	}
 
+	std::vector<std::string> func_call_to_meta(const ASTNode& stmt_node)
+	{
+		if (stmt_node.params.size() == 0 || stmt_node.params.front().params.size() == 0)
+		{
+			compiler_log::write_error("Error parsing function-call on line " + std::to_string(stmt_node.line_number));
+			return {};
+		}
+
+		ASTNode source_node = stmt_node;
+		ASTNode func_def_node = stmt_node.params.front();
+		ASTNode opening_brace_node = func_def_node.params.front();
+		ASTNode closing_brace_node = opening_brace_node.params.front();
+		
+		if(func_def_node.type != ASTNodeType::FunctionCall)
+			compiler_log::write_error("Expected function-call on line " + std::to_string(stmt_node.line_number));
+
+		if (opening_brace_node.type != ASTNodeType::OpenBrace)
+			compiler_log::write_error("Expected open brace on line " + std::to_string(stmt_node.line_number));
+
+		if (closing_brace_node.type != ASTNodeType::ClosingBrace)
+		{
+			// TODO Parse parameters and reparse closing brace node.
+		}
+
+		if (func_def_node.value == "cls")
+		{
+			return { "00E0" }; // 00E0	Display	cls()
+		}
+
+		compiler_log::write_error("Invalid function call on line " + std::to_string(stmt_node.line_number));
+		return {};
+	}
+
 	std::vector<std::string> ast_node_to_meta(const ASTNode& node, std::vector<std::string>& variables, unsigned& if_label_counter, unsigned& for_label_counter)
 	{
 		if (node.params.size() > 1)
@@ -349,6 +382,10 @@ namespace c8s
 		{
 			return close_for_loop_to_meta(variables, for_label_counter);
 		}
+		if (stmt_node.type == ASTNodeType::FunctionCall)
+		{
+			return func_call_to_meta(node);
+		}
 		if (stmt_node.type == ASTNodeType::VarDeclaration)
 		{
 			auto var_decl = var_decl_to_meta(stmt_node, variables);
@@ -375,8 +412,13 @@ namespace c8s
 		return { };
 	}
 
-	std::vector<std::string> walk_statements_and_convert_to_meta(const ASTNode& root_node, std::vector<std::string>& variables, unsigned& if_label_counter, unsigned& for_label_counter, unsigned line=1)
-	{
+	std::vector<std::string> walk_statements_and_convert_to_meta(
+		const ASTNode& root_node,
+		std::vector<std::string>& variables,
+		unsigned& if_label_counter,
+		unsigned& for_label_counter,
+		unsigned line=1
+	){
 		if (root_node.params.size() == 0)
 		{
 			compiler_log::write_error("Empty program!");

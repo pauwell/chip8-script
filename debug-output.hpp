@@ -73,6 +73,9 @@ namespace c8s
 		if (node.type == c8s::ASTNodeType::IfStatement) std::cout << "IfStmt, ";
 		if (node.type == c8s::ASTNodeType::ForLoop) std::cout << "ForLoop, ";
 		if (node.type == c8s::ASTNodeType::Program) std::cout << "Program, ";
+		if (node.type == c8s::ASTNodeType::FunctionCall) std::cout << "FunctionCall, ";
+		if (node.type == c8s::ASTNodeType::OpenBrace) std::cout << "Opening brace, ";
+		if (node.type == c8s::ASTNodeType::ClosingBrace) std::cout << "Closing brace, ";
 		std::cout << node.value << "]\n";
 		for (auto& e : node.params)
 		{

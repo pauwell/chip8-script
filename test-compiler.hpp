@@ -1,4 +1,4 @@
-/*
+﻿/*
 * MIT License
 *
 * Copyright(c) 2018 Paul Bernitz
@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include "debug-output.hpp"
+#include "debug-output.hpp" 
 #include "compiler.hpp"
 
 namespace c8s

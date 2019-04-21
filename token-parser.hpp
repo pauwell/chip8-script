@@ -53,7 +53,11 @@ namespace c8s
 		Numerical,
 		Raw,
 		ClosingStatement,  
-		EndOfProgram 
+		EndOfProgram,
+
+		OpenBrace,
+		ClosingBrace,
+		FunctionCall
 	};
 
 	// A single token.
@@ -75,6 +79,13 @@ namespace c8s
 			token += *cursor;
 		}
 		return token;
+	}
+
+	// Read characters without changing the cursor's position.
+	std::string peek_next_token_string(std::string& input_code, std::string::iterator& cursor, std::function<int(int)> validator)
+	{
+		std::string::iterator cursor_copy = cursor;
+		return read_token_string(input_code, cursor_copy, validator);
 	}
 
 	// Parse the input code into a list of tokens.
@@ -121,6 +132,18 @@ namespace c8s
 				tokens.push_back(Token{ TokenType::Colon, ":", line_number });
 				++cursor;
 			}
+			// Opening brace '('.
+			else if (current_char == '(')
+			{
+				tokens.push_back(Token{ TokenType::OpenBrace, "(", line_number });
+				++cursor;
+			}
+			// Closing brace ')'.
+			else if (current_char == ')')
+			{
+				tokens.push_back(Token{ TokenType::ClosingBrace, ")", line_number });
+				++cursor;
+			}
 			// Tab and whitespace.
 			else if (std::isblank(static_cast<unsigned char>(current_char)))
 			{
@@ -142,6 +165,7 @@ namespace c8s
 			else if (std::isalpha(static_cast<unsigned char>(current_char)))
 			{
 				std::string tok = read_token_string(input_code, cursor, INT_FUNC(std::isalpha));
+				std::string next_tok = peek_next_token_string(input_code, cursor, [](int e)-> int { return (char)e == '('; });
 				if (tok == "var") tokens.push_back(Token{ TokenType::Var, tok, line_number });
 				else if (tok == "if") tokens.push_back(Token{ TokenType::If, tok, line_number });
 				else if (tok == "endif") tokens.push_back(Token{ TokenType::Endif, tok, line_number });
@@ -150,6 +174,7 @@ namespace c8s
 				else if (tok == "step") tokens.push_back(Token{ TokenType::Step, tok, line_number });
 				else if (tok == "endfor") tokens.push_back(Token{ TokenType::Endfor, tok, line_number });
 				else if (tok == "raw") tokens.push_back(Token{ TokenType::Raw, tok, line_number });
+				else if (next_tok[0] == '(') tokens.push_back(Token{ TokenType::FunctionCall, tok, line_number });
 				else tokens.push_back(Token{ TokenType::Identifier, tok, line_number });
 			}
 			else

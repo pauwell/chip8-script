@@ -40,8 +40,9 @@ namespace c8s
 		std::cout << "  -h, --help          display this help and exit\n";
 		std::cout << "  -v, --version       print the version\n";
 		std::cout << "  -d, --debug         attach debugger after compilation\n";
+		std::cout << "  -t, --tests         run standard tests\n";
 		std::cout << "  -s, --silent        do not produce any output\n";
-		std::cout << "  -m, --print-steps   print intermediate steps (tokenization, AST creation etc.)\n";
+		std::cout << "  -m, --steps         print intermediate steps (tokenization, AST creation etc.)\n";
 
 		std::cout << "\nFor more information please visit:\n";
 		std::cout << "<https://github.com/pauwell/chip8-script>";
@@ -84,13 +85,18 @@ namespace c8s
 			{
 				flags.push_back(Flag{ 'd', "" });
 			}
+			// -t, --tests
+			else if ((arg[0] == '-' && arg[1] != '-' && arg.find('t') != std::string::npos) || arg.find("--tests") == 0)
+			{
+				return { Flag{ 't', "" } };
+			}
 			// -s, --silent
 			else if ((arg[0] == '-' && arg[1] != '-' && arg.find('s') != std::string::npos) || arg.find("--silent") == 0)
 			{
 				flags.push_back(Flag{ 's', "" });
 			}
 			// -m, --print-steps
-			else if ((arg[0] == '-' && arg[1] != '-' && arg.find('m') != std::string::npos) || arg.find("--print-steps") == 0)
+			else if ((arg[0] == '-' && arg[1] != '-' && arg.find('m') != std::string::npos) || arg.find("--steps") == 0)
 			{
 				flags.push_back(Flag{ 'm', "" });
 			}
