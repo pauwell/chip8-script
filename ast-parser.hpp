@@ -190,7 +190,7 @@ namespace c8s
 			{
 				return create_node_and_walk(ASTNodeType::Identifier, tok, cursor, walk);
 			}
-			// TODO if a==b: does not work
+			// TODO if a==b: does not work => FIXED BY changing faulty opcode 5XY4 to 5XY0.
 
 			//return create_node_and_walk(ASTNodeType::IfStatement, tok, cursor, walk);
 		}

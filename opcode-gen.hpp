@@ -78,7 +78,7 @@ namespace c8s
 						unsigned real_address_offset = (0x200 + (real_distance * 2));
 
 						// Convert the offset from decimal to a hexadecimal string.
-						std::string converted_hex_buffer = hex_to_string(real_address_offset);
+						std::string converted_hex_buffer = u16_to_hex_string(real_address_offset);
 
 						// Overwrite the current meta-opcode with the real opcode.
 						meta_opcodes[j] = meta_opcodes[j].substr(0, meta_opcodes[j].find('<')) + converted_hex_buffer;

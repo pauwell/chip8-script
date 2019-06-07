@@ -31,10 +31,19 @@
 
 namespace c8s
 {
-	std::string hex_to_string(u16 hex)
+	std::string u16_to_hex_string(u16 hex)
 	{
 		std::stringstream ss;
 		ss << std::hex << hex;
 		return ss.str();
+	}
+
+	u16 hex_string_to_u16(std::string hex_string)
+	{
+		unsigned result;
+		std::stringstream ss;
+		ss << std::hex << hex_string;
+		ss >> result;
+		return result;
 	}
 }

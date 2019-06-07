@@ -32,6 +32,16 @@ namespace c8s
 	// Run all tests.
 	bool run_tests()
 	{
+		if (
+			build_opcode("8XY3", 0, 0, 0x1, 0x2) != "8123" ||
+			build_opcode("1NNN", 0xF4) != "10f4" ||
+			build_opcode("3XNN", 0, 0, 0xA, 0, 0, 0xBB) != "3abb",
+			build_opcode("DXYN", 0, 0x3, 0x1, 0x2) != "d123"
+		) {
+			std::cout << "Failed building opcodes via `build_opcode(mask..)`\n";
+			return false;
+		}
+
 		auto raw_test_output = compile(
 			"VAR a = 10\n"\
 			"RAW 6001\n",
@@ -70,7 +80,7 @@ namespace c8s
 			|| for_test_output[6] != 0x7002
 			|| for_test_output[7] != 0x7001
 			|| for_test_output[8] != 0x8134
-			|| for_test_output[9] != 0x5124
+			|| for_test_output[9] != 0x5120
 			|| for_test_output[10]!= 0x1208
 			|| for_test_output[11]!= 0x640A
 			) {

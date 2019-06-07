@@ -25,12 +25,60 @@
 #pragma once
 
 #include <sstream>
+#include <algorithm>
 
 #include "ast-parser.hpp"
 #include "conversion.hpp"
 
 namespace c8s
 {
+	std::string build_opcode(std::string mask, u16 nnn = 0, u8 n = 0, u8 x = 0, u8 y = 0, u8 kk = 0, u8 nn = 0)
+	{
+		// Convert mask to uppercase.
+		std::transform(mask.begin(), mask.end(), mask.begin(), std::toupper);
+
+		// Find variables in mask.
+		auto find_nnn = mask.find("NNN");
+		auto find_n = mask.find("N");
+		auto find_x = mask.find("X");
+		auto find_y = mask.find("Y");
+		auto find_kk = mask.find("kk");
+		auto find_nn = mask.find("NN", mask.length() - 3); // TODO works?
+
+		// Replace G-Z in mask with zeros. (NNN => 000)
+		for (unsigned i = 0; i < mask.length(); ++i)
+		{
+			auto& m = mask[i];
+			if (m >= 'G' && m <= 'Z')
+				m = '0';
+		}
+
+		// Convert mask to u16
+		u16 mask_u16 = hex_string_to_u16(mask);
+
+		// Insert variable values that where found in mask in their respective positions.
+		if (find_nnn != std::string::npos)
+		{
+			// Exit early because the mask has all values at this point.
+			mask_u16 |= (0xFFF & nnn);
+			return u16_to_hex_string(mask_u16);
+		}
+		if (find_n != std::string::npos) mask_u16 |= (0xF & n);
+		if (find_x != std::string::npos) mask_u16 |= ((0xF & x) << 8);
+		if (find_y != std::string::npos) mask_u16 |= ((0xF & y) << 4);
+		if (find_kk != std::string::npos) mask_u16 |= (0xFF & kk);
+		else if (find_nn != std::string::npos) mask_u16 |= (0xFF & nn);
+
+		// Convert the resulting opcode back to string.
+		return u16_to_hex_string(mask_u16);
+	}
+	
+	std::string build_jump_label(unsigned label_counter)
+	{
+		std::cout << "Created jump label: 1<" + std::to_string(label_counter) + ">";
+		return "1<" + std::to_string(label_counter) + ">";
+	}
+
 	unsigned find_var_index(std::string name, std::vector<std::string>& variables)
 	{
 		auto found_at = std::find(variables.begin(), variables.end(), name);
@@ -68,8 +116,13 @@ namespace c8s
 			{
 				// 6XNN	Const	Vx = NN		Sets VX to NN.
 				variables.push_back(source_name);
-				u16 op = ((0x6 << 12) | ((u16)(variables.size() - 1) << 8) | (value_u8 & 0xFF));
-				return hex_to_string(op);
+				u8 x = variables.size() > 0 ? variables.size() - 1 : 0;
+				u8 y = ((u16)(variables.size() - 1) << 8); // ?
+				const auto xy = build_opcode("6XNN", x, value_u8);
+				return build_opcode("6XNN", variables.size() - 1, value_u8);
+				//u16 op = ((0x6 << 12) | ((u16)(variables.size() - 1) << 8) | (value_u8 & 0xFF));
+				//const auto zz = u16_to_hex_string(op);
+				//return u16_to_hex_string(op);
 			}
 			else
 			{
@@ -84,8 +137,12 @@ namespace c8s
 				// 8XY0	Assign	Vx=Vy
 				variables.push_back(source_name);
 				u8 target_v_index = find_var_index(target_node.value, variables);
+				u8 x = variables.size() > 0 ? variables.size() - 1 : 0;
+				const auto xy = build_opcode("8XY0", 0, 0, x, target_v_index);
+				//return build_opcode("8XY0", 0, 0, x, target_v_index);
 				u16 op = ((0x8 << 12) | ((u16)(variables.size() - 1) << 8) | (target_v_index << 4) | (0x0));
-				return hex_to_string(op);
+				const auto zz = u16_to_hex_string(op);
+				return u16_to_hex_string(op);
 			}
 		}
 		else
@@ -120,12 +177,12 @@ namespace c8s
 			if (operator_node.value == "=")
 			{
 				// 6XNN	Const	Vx = NN
-				return hex_to_string((0x6 << 12) | (v_index << 8) | (value_u8 & 0xFF));
+				return u16_to_hex_string((0x6 << 12) | (v_index << 8) | (value_u8 & 0xFF));
 			}
 			else if (operator_node.value == "+=")
 			{
 				// 7XNN	Const	Vx += NN
-				return hex_to_string((0x7 << 12) | (v_index << 8) | (value_u8 & 0xFF));
+				return u16_to_hex_string((0x7 << 12) | (v_index << 8) | (value_u8 & 0xFF));
 			}
 			else
 			{
@@ -141,32 +198,37 @@ namespace c8s
 			if (operator_node.value == "=")
 			{
 				// 8XY0	Assign	Vx=Vy
-				return hex_to_string((0x8 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x0));
+				return u16_to_hex_string((0x8 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x0));
 			}
 			else if (operator_node.value == "+=")
 			{
 				// 8XY4	Math	Vx += Vy
-				return hex_to_string((0x8 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x4));
+				return build_opcode("8XY4", 0, 0, source_v_index, target_v_index);
+				//return u16_to_hex_string((0x8 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x4));
 			}
 			else if (operator_node.value == "-=")
 			{
 				// 8XY5	Math	Vx -= Vy
-				return hex_to_string((0x8 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x5));
+				return build_opcode("8XY5", 0, 0, source_v_index, target_v_index);
+				//return u16_to_hex_string((0x8 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x5));
 			}
 			else if (operator_node.value == "&=")
 			{
 				// 8XY2	BitOp	Vx=Vx&Vy
-				return hex_to_string((0x8 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x2));
+				return build_opcode("8XY2", 0, 0, source_v_index, target_v_index);
+				//return u16_to_hex_string((0x8 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x2));
 			}
 			else if (operator_node.value == "|=")
 			{
 				// 8XY1	BitOp	Vx=Vx|Vy
-				return hex_to_string((0x8 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x1));
+				return build_opcode("8XY1", 0, 0, source_v_index, target_v_index);
+				//return u16_to_hex_string((0x8 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x1));
 			}
 			else if (operator_node.value == "^=")
 			{
 				// 8XY3	BitOp	Vx=Vx^Vy
-				return hex_to_string((0x8 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x3));
+				return build_opcode("8XY3", 0, 0, source_v_index, target_v_index);
+				//return u16_to_hex_string((0x8 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x3));
 			}
 			else
 			{
@@ -206,8 +268,10 @@ namespace c8s
 			{
 				// 3XNN	Cond	if(Vx==NN)
 				// 1NNN	Flow	goto NNN;
+				build_opcode("3XNN", 0, 0, v_index, 0, 0, value_u8);
+				build_jump_label(if_label_counter/*++*/);
 				return { 
-					hex_to_string((u16)((0x3 << 12) | (v_index << 8) | (value_u8 & 0xFF))),
+					u16_to_hex_string((u16)((0x3 << 12) | (v_index << 8) | (value_u8 & 0xFF))),
 					"1<" + std::to_string(if_label_counter++) + ">"
 				};
 			}
@@ -215,8 +279,10 @@ namespace c8s
 			{
 				// 4XNN	Cond	if(Vx!=NN)
 				// 1NNN	Flow	goto NNN;
+				build_opcode("4XNN", 0, 0, v_index, 0, 0, value_u8);
+				build_jump_label(if_label_counter/*++*/);
 				return { 
-					hex_to_string((u16)((0x4 << 12) | (v_index << 8) | (value_u8 & 0xFF))),
+					u16_to_hex_string((u16)((0x4 << 12) | (v_index << 8) | (value_u8 & 0xFF))),
 					"1<" + std::to_string(if_label_counter++) + ">"
 				};
 			}
@@ -232,7 +298,7 @@ namespace c8s
 				// 5XY0	Cond	if(Vx==Vy)
 				// 1NNN	Flow	goto NNN;
 				return {
-					hex_to_string((u16)((0x5 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x0))),
+					u16_to_hex_string((u16)((0x5 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x0))),
 					"1<" + std::to_string(if_label_counter++) + ">"
 				};
 			}
@@ -241,7 +307,7 @@ namespace c8s
 				// 9XY0	Cond	if(Vx!=Vy)
 				// 1NNN	Flow	goto NNN;
 				return {
-					hex_to_string((u16)((0x9 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x0))),
+					u16_to_hex_string((u16)((0x9 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x0))),
 					"1<" + std::to_string(if_label_counter++) + ">"
 				};
 			}
@@ -312,8 +378,10 @@ namespace c8s
 			}
 		
 		std::vector<std::string> endfor_ops{
-			hex_to_string((u16)((0x8 << 12) | (var_idx << 8) | ((var_idx + 2) << 4) | (0x4))), /* 8[i][istep]4 - Vx += Vy  */
-			hex_to_string((u16)((0x5 << 12) | (var_idx << 8) | ((var_idx + 1) << 4) | (0x4))), /* 5[i][ito]0 - if(Vx==Vy) */
+			build_opcode("8XY4", 0, 0, var_idx, var_idx + 2), /* 8[i][istep]4 - Vx += Vy  */
+			build_opcode("5XY0", 0, 0, var_idx, var_idx + 1), /* 5[i][ito]0 - if(Vx==Vy) */
+			//u16_to_hex_string((u16)((0x8 << 12) | (var_idx << 8) | ((var_idx + 2) << 4) | (0x4))), /* 8[i][istep]4 - Vx += Vy  */
+			//u16_to_hex_string((u16)((0x5 << 12) | (var_idx << 8) | ((var_idx + 1) << 4) | (0x0))), /* 5[i][ito]0 - if(Vx==Vy) */
 			"1<" + std::to_string(--for_label_counter) + ">"	/* Jmp to loop-start. */
 		};
 

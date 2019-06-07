@@ -32,6 +32,8 @@
 
 int main(int argc, char** argv)
 {
+	c8s::run_tests();// XX
+
 	// Parse arguments.
 	auto flags = c8s::parse_flags(argc, argv);
 
