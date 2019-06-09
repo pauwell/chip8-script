@@ -115,7 +115,7 @@ namespace c8s
 		);
 
 		if (compiler_log::read_errors().size() != 0
-			|| test_output.size() != 20
+			|| test_output.size() != 21
 			|| test_output[0] != 0x6004
 			|| test_output[1] != 0x6102
 			|| test_output[2] != 0x3004
@@ -135,7 +135,8 @@ namespace c8s
 			|| test_output[16]!= 0x8013
 			|| test_output[17]!= 0x8015
 			|| test_output[18]!= 0x800E
-			|| test_output[19]!= 0x8006
+			|| test_output[19]!= 0x800E
+			|| test_output[20]!= 0x8006
 		){
 			std::cout << "\n\ntest_output failed!\n";
 			return false;

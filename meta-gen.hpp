@@ -145,12 +145,12 @@ namespace c8s
 		return "";
 	}
 
-	std::string var_expr_to_meta(const ASTNode& stmt_node, std::vector<std::string>& variables)
+	std::vector<std::string> var_expr_to_meta(const ASTNode& stmt_node, std::vector<std::string>& variables)
 	{
 		if (stmt_node.params.size() == 0 || stmt_node.params.front().params.size() == 0)
 		{
 			compiler_log::write_error("Error parsing expression on line " + std::to_string(stmt_node.line_number));
-			return "";
+			return {};
 		}
 
 
@@ -169,29 +169,31 @@ namespace c8s
 			if (operator_node.value == "=")
 			{
 				// 6XNN	Const	Vx = NN
-				return u16_to_hex_string((0x6 << 12) | (v_index << 8) | (value_u8 & 0xFF));
+				return { u16_to_hex_string((0x6 << 12) | (v_index << 8) | (value_u8 & 0xFF)) };
 			}
 			else if (operator_node.value == "+=")
 			{
 				// 7XNN	Const	Vx += NN
-				return u16_to_hex_string((0x7 << 12) | (v_index << 8) | (value_u8 & 0xFF));
+				return { u16_to_hex_string((0x7 << 12) | (v_index << 8) | (value_u8 & 0xFF)) };
 			}
 			else if (operator_node.value == ">>=")
 			{
 				// 8XY6	BitOp	Vx>>=1 (y is always zero?)
-				// TODO add a multiplier. Currently shifting is always by 1.
-				return build_opcode("8XY6", 0, 0, v_index, 0);
+				const unsigned multiplier = std::atoi(target_node.value.c_str());
+				const std::string op = build_opcode("8XY6", 0, 0, v_index, 0);
+				return std::vector<std::string>{ multiplier, op };
 			}
 			else if (operator_node.value == "<<=")
 			{
 				// 8XYE	BitOp	Vx>>=1 (y is always zero?)
-				// TODO add a multiplier. Currently shifting is always by 1.
-				return build_opcode("8XYE", 0, 0, v_index, 0);
+				const unsigned multiplier = std::atoi(target_node.value.c_str());
+				const std::string op = build_opcode("8XYE", 0, 0, v_index, 0);
+				return std::vector<std::string>{ multiplier, op };
 			}
 			else
 			{
 				compiler_log::write_error("Unknown operator: " + operator_node.value + " on line " + std::to_string(stmt_node.line_number));
-				return "";
+				return {};
 			}
 		}
 		else if (target_node.type == ASTNodeType::Identifier)
@@ -202,47 +204,47 @@ namespace c8s
 			if (operator_node.value == "=")
 			{
 				// 8XY0	Assign	Vx=Vy
-				return u16_to_hex_string((0x8 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x0));
+				return { u16_to_hex_string((0x8 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x0)) };
 			}
 			else if (operator_node.value == "|=")
 			{
 				// 8XY1	BitOp	Vx=Vx|Vy
-				return build_opcode("8XY1", 0, 0, source_v_index, target_v_index);
+				return { build_opcode("8XY1", 0, 0, source_v_index, target_v_index) };
 				//return u16_to_hex_string((0x8 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x1));
 			}
 			else if (operator_node.value == "&=")
 			{
 				// 8XY2	BitOp	Vx=Vx&Vy
-				return build_opcode("8XY2", 0, 0, source_v_index, target_v_index);
+				return { build_opcode("8XY2", 0, 0, source_v_index, target_v_index) };
 				//return u16_to_hex_string((0x8 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x2));
 			}
 			else if (operator_node.value == "^=")
 			{
 				// 8XY3	BitOp	Vx=Vx^Vy
-				return build_opcode("8XY3", 0, 0, source_v_index, target_v_index);
+				return { build_opcode("8XY3", 0, 0, source_v_index, target_v_index) };
 				//return u16_to_hex_string((0x8 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x3));
 			}
 			else if (operator_node.value == "+=")
 			{
 				// 8XY4	Math	Vx += Vy
-				return build_opcode("8XY4", 0, 0, source_v_index, target_v_index);
+				return { build_opcode("8XY4", 0, 0, source_v_index, target_v_index) };
 				//return u16_to_hex_string((0x8 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x4));
 			}
 			else if (operator_node.value == "-=")
 			{
 				// 8XY5	Math	Vx -= Vy
-				return build_opcode("8XY5", 0, 0, source_v_index, target_v_index);
+				return { build_opcode("8XY5", 0, 0, source_v_index, target_v_index) };
 				//return u16_to_hex_string((0x8 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x5));
 			}
 			else
 			{
 				compiler_log::write_error("Unknown operator " + operator_node.value + " in expression on line " + std::to_string(stmt_node.line_number));
-				return "";
+				return {};
 			}	
 		}
 
 		compiler_log::write_error("Syntax error in expression on line " + std::to_string(stmt_node.line_number));
-		return "";
+		return {};
 	}
 
 	std::vector<std::string> open_if_statement_to_meta(const ASTNode& stmt_node, std::vector<std::string>& variables, unsigned& if_label_counter)
@@ -467,9 +469,7 @@ namespace c8s
 		}
 		if (stmt_node.type == ASTNodeType::VarExpression)
 		{
-			auto var_expr = var_expr_to_meta(stmt_node, variables);
-			if (var_expr.length() == 0) return {};
-			return { var_expr };
+			return var_expr_to_meta(stmt_node, variables);
 		}
 		if (stmt_node.type == ASTNodeType::Raw)
 		{
