@@ -4,13 +4,21 @@
 
 
 Chip-8 Script is built to provide a thin layer of abstraction over the native chip-8 opcodes.
-This project has just started, please feel free to contribute in any way.
 
 * :fire: The `easy` way to create chip-8 ROMs.
-* :fire: Using variables with meaningful names instead of managing chip-8's registers. 
-* :fire: You can easily predict to which opcodes your code will compile. 
+* :fire: Using variables with meaningful names instead of managing chip-8's registers.
+* :fire: You can easily predict to which opcodes your code will compile.
 * :fire: Use labels for jumps instead of line numbers.
 
+### Build
+
+```$ export CC=gcc-7```
+
+```$ export CXX=g++-7```
+
+```$ cmake .```
+
+```$ cmake --build .```
 
 ### Syntax showcase
 ```basic
@@ -19,7 +27,7 @@ VAR x = 10
 VAR y = x
 
 'For-loop with nested if-condition.
-FOR i = 0 TO 10 STEP 1 
+FOR i = 0 TO 10 STEP 1
     IF x == y:
         x += 1
     ENDIF
