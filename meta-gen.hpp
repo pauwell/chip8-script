@@ -35,7 +35,7 @@ namespace c8s
 	std::string build_opcode(std::string mask, u16 nnn = 0, u8 n = 0, u8 x = 0, u8 y = 0, u8 kk = 0, u8 nn = 0)
 	{
 		// Convert mask to uppercase.
-		std::transform(mask.begin(), mask.end(), mask.begin(), std::toupper);
+		std::transform(mask.begin(), mask.end(), mask.begin(), static_cast<int(*)(int)>(std::toupper));
 
 		// Find variables in mask.
 		auto find_nnn = mask.find("NNN");
