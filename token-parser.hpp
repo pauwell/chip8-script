@@ -32,7 +32,7 @@
 
 #include "compiler_log.hpp"
 
-#define INT_FUNC(f) static_cast<int(*)(int)>(f) 
+#define INT_FUNC(f) static_cast<int(*)(int)>(f)
 #define UCHAR(c) static_cast<unsigned char>(c)
 
 namespace c8s
@@ -54,7 +54,6 @@ namespace c8s
 		Raw,
 		ClosingStatement,  
 		EndOfProgram,
-
 		OpenBrace,
 		ClosingBrace,
 		FunctionCall
