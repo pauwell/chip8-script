@@ -114,15 +114,10 @@ namespace c8s
 
 			if (std::find(variables.begin(), variables.end(), source_name) == variables.end())
 			{
-				// 6XNN	Const	Vx = NN		Sets VX to NN.
+				// 6XNN	Const	Vx = NN		Sets VX to NN + Creating a new variable.
 				variables.push_back(source_name);
-				u8 x = variables.size() > 0 ? variables.size() - 1 : 0;
-				u8 y = ((u16)(variables.size() - 1) << 8); // ?
-				const auto xy = build_opcode("6XNN", x, value_u8);
-				return build_opcode("6XNN", variables.size() - 1, value_u8);
-				//u16 op = ((0x6 << 12) | ((u16)(variables.size() - 1) << 8) | (value_u8 & 0xFF));
-				//const auto zz = u16_to_hex_string(op);
-				//return u16_to_hex_string(op);
+				u16 op = ((0x6 << 12) | ((u16)(variables.size() - 1) << 8) | (value_u8 & 0xFF));
+				return u16_to_hex_string(op);
 			}
 			else
 			{
@@ -134,14 +129,10 @@ namespace c8s
 		{
 			if (std::find(variables.begin(), variables.end(), source_name) == variables.end())
 			{
-				// 8XY0	Assign	Vx=Vy
+				// 8XY0	Assign	Vx=Vy	Sets VX to NN + Creating a new variable.
 				variables.push_back(source_name);
 				u8 target_v_index = find_var_index(target_node.value, variables);
-				u8 x = variables.size() > 0 ? variables.size() - 1 : 0;
-				const auto xy = build_opcode("8XY0", 0, 0, x, target_v_index);
-				//return build_opcode("8XY0", 0, 0, x, target_v_index);
 				u16 op = ((0x8 << 12) | ((u16)(variables.size() - 1) << 8) | (target_v_index << 4) | (0x0));
-				const auto zz = u16_to_hex_string(op);
 				return u16_to_hex_string(op);
 			}
 		}
@@ -161,6 +152,7 @@ namespace c8s
 			compiler_log::write_error("Error parsing expression on line " + std::to_string(stmt_node.line_number));
 			return "";
 		}
+
 
 		ASTNode source_node = stmt_node;
 		ASTNode operator_node = source_node.params.front();
@@ -184,6 +176,18 @@ namespace c8s
 				// 7XNN	Const	Vx += NN
 				return u16_to_hex_string((0x7 << 12) | (v_index << 8) | (value_u8 & 0xFF));
 			}
+			else if (operator_node.value == ">>=")
+			{
+				// 8XY6	BitOp	Vx>>=1 (y is always zero?)
+				// TODO add a multiplier. Currently shifting is always by 1.
+				return build_opcode("8XY6", 0, 0, v_index, 0);
+			}
+			else if (operator_node.value == "<<=")
+			{
+				// 8XYE	BitOp	Vx>>=1 (y is always zero?)
+				// TODO add a multiplier. Currently shifting is always by 1.
+				return build_opcode("8XYE", 0, 0, v_index, 0);
+			}
 			else
 			{
 				compiler_log::write_error("Unknown operator: " + operator_node.value + " on line " + std::to_string(stmt_node.line_number));
@@ -200,6 +204,24 @@ namespace c8s
 				// 8XY0	Assign	Vx=Vy
 				return u16_to_hex_string((0x8 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x0));
 			}
+			else if (operator_node.value == "|=")
+			{
+				// 8XY1	BitOp	Vx=Vx|Vy
+				return build_opcode("8XY1", 0, 0, source_v_index, target_v_index);
+				//return u16_to_hex_string((0x8 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x1));
+			}
+			else if (operator_node.value == "&=")
+			{
+				// 8XY2	BitOp	Vx=Vx&Vy
+				return build_opcode("8XY2", 0, 0, source_v_index, target_v_index);
+				//return u16_to_hex_string((0x8 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x2));
+			}
+			else if (operator_node.value == "^=")
+			{
+				// 8XY3	BitOp	Vx=Vx^Vy
+				return build_opcode("8XY3", 0, 0, source_v_index, target_v_index);
+				//return u16_to_hex_string((0x8 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x3));
+			}
 			else if (operator_node.value == "+=")
 			{
 				// 8XY4	Math	Vx += Vy
@@ -211,24 +233,6 @@ namespace c8s
 				// 8XY5	Math	Vx -= Vy
 				return build_opcode("8XY5", 0, 0, source_v_index, target_v_index);
 				//return u16_to_hex_string((0x8 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x5));
-			}
-			else if (operator_node.value == "&=")
-			{
-				// 8XY2	BitOp	Vx=Vx&Vy
-				return build_opcode("8XY2", 0, 0, source_v_index, target_v_index);
-				//return u16_to_hex_string((0x8 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x2));
-			}
-			else if (operator_node.value == "|=")
-			{
-				// 8XY1	BitOp	Vx=Vx|Vy
-				return build_opcode("8XY1", 0, 0, source_v_index, target_v_index);
-				//return u16_to_hex_string((0x8 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x1));
-			}
-			else if (operator_node.value == "^=")
-			{
-				// 8XY3	BitOp	Vx=Vx^Vy
-				return build_opcode("8XY3", 0, 0, source_v_index, target_v_index);
-				//return u16_to_hex_string((0x8 << 12) | (source_v_index << 8) | (target_v_index << 4) | (0x3));
 			}
 			else
 			{
@@ -311,6 +315,7 @@ namespace c8s
 					"1<" + std::to_string(if_label_counter++) + ">"
 				};
 			}
+
 		}
 
 		return { 0x0 };

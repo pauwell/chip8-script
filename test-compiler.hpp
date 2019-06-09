@@ -44,14 +44,16 @@ namespace c8s
 
 		auto raw_test_output = compile(
 			"VAR a = 10\n"\
+			"VAR b = 10\n"\
 			"RAW 6001\n",
 			true, true
 		);
 
 		if (compiler_log::read_errors().size() != 0
-			|| raw_test_output.size() != 2
+			|| raw_test_output.size() != 3
 			|| raw_test_output[0] != 0x600A
-			|| raw_test_output[1] != 0x6001
+			|| raw_test_output[1] != 0x610A
+			|| raw_test_output[2] != 0x6001
 			) {
 			std::cout << "\n\raw_test_output failed!\n";
 			return false;
@@ -106,12 +108,14 @@ namespace c8s
 			"a |= b\n"\
 			"a &= b\n"\
 			"a ^= b\n"\
-			"a -= b",
+			"a -= b\n"\
+			"a <<=2\n"\
+			"a >>=1\n",
 			true, true
 		);
 
 		if (compiler_log::read_errors().size() != 0
-			|| test_output.size() != 18
+			|| test_output.size() != 20
 			|| test_output[0] != 0x6004
 			|| test_output[1] != 0x6102
 			|| test_output[2] != 0x3004
@@ -130,6 +134,8 @@ namespace c8s
 			|| test_output[15]!= 0x8012
 			|| test_output[16]!= 0x8013
 			|| test_output[17]!= 0x8015
+			|| test_output[18]!= 0x800E
+			|| test_output[19]!= 0x8006
 		){
 			std::cout << "\n\ntest_output failed!\n";
 			return false;

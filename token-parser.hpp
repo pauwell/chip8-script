@@ -54,7 +54,6 @@ namespace c8s
 		Raw,
 		ClosingStatement,  
 		EndOfProgram,
-
 		OpenBrace,
 		ClosingBrace,
 		FunctionCall
